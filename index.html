@@ -257,10 +257,11 @@
   .opt-pop .op-frasa{ color: var(--c2); }
   .opt-pop .op-contoh{ color: var(--ice-dim); }
   @media (max-width: 760px){
-    /* Di layar sempit kotaknya jadi bilah bawah; ilustrasi disembunyikan
-       supaya penjelasan dan contohnya tetap muat. */
-    .opt-pop .op-art{ display:none; }
+    /* Di layar sempit kotaknya jadi bilah bawah. Ilustrasi tetap tampil,
+       tapi dikecilkan dan didampingi teks supaya semuanya muat. */
+    .opt-pop .op-art{ float:left; width:44%; margin:0 11px 6px 0; }
     .opt-pop .op-grup{ margin-top:0; }
+    .opt-pop .op-sec{ clear:both; }
   }
 
   /* ---------- Segmented control ---------- */
@@ -1414,302 +1415,808 @@ const OPTION_INFO = {
   }
 };
 
-/* Ilustrasi per kelompok opsi. Sengaja skematis: tugasnya menerangkan apa yang
-   dibedakan kelompok ini (jarak kamera, arah cahaya, jenis material), bukan
-   memamerkan contoh keluaran AI. Satu gambar dipakai bersama oleh semua opsi
-   dalam kelompok yang sama. */
-const GROUP_ART = {
-  'Animasi & kartun':
-    '<rect width="240" height="110" fill="#FFE9F2"/>' +
-    '<circle cx="120" cy="58" r="38" fill="#FFD0A8"/>' +
-    '<path d="M84 42q10-22 36-22t36 22q-14-10-36-10t-36 10z" fill="#4A2E22"/>' +
-    '<ellipse cx="106" cy="60" rx="10" ry="12" fill="#fff"/><ellipse cx="134" cy="60" rx="10" ry="12" fill="#fff"/>' +
-    '<circle cx="107" cy="62" r="6" fill="#2B3A67"/><circle cx="135" cy="62" r="6" fill="#2B3A67"/>' +
-    '<circle cx="104" cy="58" r="2.2" fill="#fff"/><circle cx="132" cy="58" r="2.2" fill="#fff"/>' +
-    '<path d="M112 80q8 7 16 0" stroke="#8A4A3A" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
-    '<circle cx="88" cy="74" r="6" fill="#FF9EB5" opacity=".6"/><circle cx="152" cy="74" r="6" fill="#FF9EB5" opacity=".6"/>',
+/* =========================================================================
+   PRATINJAU GAYA PER OPSI — dirender prosedural
+   Subjek yang sama (potret untuk makhluk hidup, objek untuk benda mati)
+   digambar ulang memakai parameter tiap gaya: mode gambar, palet, tebal
+   garis, latar, dan efek permukaan. Jadi tiap opsi punya gambar sendiri
+   yang meniru ciri gayanya. Ini tiruan skematis, bukan keluaran AI.
+   ========================================================================= */
 
-  'Komik & gambar tangan':
-    '<rect width="240" height="110" fill="#F6F1E6"/>' +
-    '<rect x="12" y="12" width="100" height="86" fill="#FFFDF6" stroke="#141414" stroke-width="3"/>' +
-    '<rect x="128" y="12" width="100" height="86" fill="#FFFDF6" stroke="#141414" stroke-width="3"/>' +
-    '<g fill="#141414" opacity=".55">' +
-    '<circle cx="26" cy="76" r="2.4"/><circle cx="38" cy="76" r="2.4"/><circle cx="50" cy="76" r="2.4"/><circle cx="62" cy="76" r="2.4"/>' +
-    '<circle cx="32" cy="86" r="2"/><circle cx="44" cy="86" r="2"/><circle cx="56" cy="86" r="2"/><circle cx="68" cy="86" r="2"/></g>' +
-    '<path d="M26 56q22-30 42-6t34-16" stroke="#141414" stroke-width="4" fill="none" stroke-linecap="round"/>' +
-    '<path d="M142 30q26 6 40 30t-8 34" stroke="#141414" stroke-width="7" fill="none" stroke-linecap="round" opacity=".85"/>' +
-    '<path d="M150 76q18-8 34 2" stroke="#B4472E" stroke-width="5" fill="none" stroke-linecap="round" opacity=".8"/>',
+const SA_W = 240, SA_H = 110;
+let saUid = 0;                 // penjamin id SVG unik antar pratinjau
 
-  'Era & suasana':
-    '<rect width="240" height="110" fill="#101018"/>' +
-    '<rect x="10" y="14" width="68" height="82" fill="#C9A66B"/>' +
-    '<rect x="86" y="14" width="68" height="82" fill="#D8D8D8"/>' +
-    '<rect x="162" y="14" width="68" height="82" fill="#2A1140"/>' +
-    '<circle cx="44" cy="48" r="15" fill="#7A5A32" opacity=".8"/>' +
-    '<circle cx="120" cy="48" r="15" fill="#2A2A2A"/>' +
-    '<circle cx="196" cy="48" r="15" fill="#FF3FD0" opacity=".9"/>' +
-    '<rect x="10" y="76" width="68" height="6" fill="#8A6E43"/>' +
-    '<rect x="86" y="76" width="68" height="6" fill="#404040"/>' +
-    '<rect x="162" y="76" width="68" height="6" fill="#3FE0FF"/>' +
-    '<g fill="#101018"><rect x="0" y="0" width="240" height="8"/><rect x="0" y="102" width="240" height="8"/></g>' +
-    '<g fill="#5A5A6A"><rect x="14" y="1" width="8" height="6"/><rect x="38" y="1" width="8" height="6"/><rect x="62" y="1" width="8" height="6"/><rect x="86" y="1" width="8" height="6"/><rect x="110" y="1" width="8" height="6"/><rect x="134" y="1" width="8" height="6"/><rect x="158" y="1" width="8" height="6"/><rect x="182" y="1" width="8" height="6"/><rect x="206" y="1" width="8" height="6"/></g>',
+const SA_BUST = [
+  { t:'ellipse', cx:120, cy:100, rx:45, ry:26, role:'cloth' },
+  { t:'rect', x:112, y:62, w:16, h:20, role:'skin' },
+  { t:'ellipse', cx:120, cy:48, rx:23, ry:27, role:'skin' },
+  { t:'path', d:'M97 41q3-25 23-25t23 25q-7-14-23-14t-23 14z', role:'hair' },
+  { t:'eye', cx:112, cy:49 },
+  { t:'eye', cx:128, cy:49 },
+  { t:'mouth', cx:120, cy:63 }
+];
 
-  'Mainan & figur':
-    '<rect width="240" height="110" fill="#EFE6DA"/>' +
-    '<ellipse cx="120" cy="98" rx="80" ry="8" fill="#C9BBAA"/>' +
-    '<rect x="86" y="26" width="34" height="20" rx="3" fill="#F2C13D"/>' +
-    '<rect x="96" y="20" width="14" height="8" rx="3" fill="#F2C13D"/>' +
-    '<circle cx="95" cy="36" r="2" fill="#3A2A1E"/><circle cx="111" cy="36" r="2" fill="#3A2A1E"/>' +
-    '<rect x="88" y="48" width="30" height="28" rx="3" fill="#3F7FD8"/>' +
-    '<rect x="90" y="76" width="12" height="16" rx="2" fill="#2A4E86"/><rect x="104" y="76" width="12" height="16" rx="2" fill="#2A4E86"/>' +
-    '<rect x="78" y="50" width="10" height="22" rx="4" fill="#F2C13D"/><rect x="118" y="50" width="10" height="22" rx="4" fill="#F2C13D"/>' +
-    '<circle cx="180" cy="66" r="26" fill="#D2724E"/>' +
-    '<path d="M164 56q8 6 4 14M188 54q-6 8 2 16" stroke="#B15A38" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/>',
+const SA_OBJ = [
+  { t:'ellipse', cx:120, cy:99, rx:42, ry:7, role:'shadow' },
+  { t:'rect', x:104, y:40, w:32, h:56, r:9, role:'skin' },
+  { t:'rect', x:112, y:26, w:16, h:16, r:3, role:'hair' },
+  { t:'rect', x:108, y:18, w:24, h:10, r:3, role:'cloth' },
+  { t:'rect', x:110, y:58, w:20, h:20, r:2, role:'accent' }
+];
 
-  'Pixel & game':
-    '<rect width="240" height="110" fill="#0E1420"/>' +
-    '<g stroke="#1C2740" stroke-width="1">' +
-    '<path d="M0 22h240M0 44h240M0 66h240M0 88h240M40 0v110M80 0v110M120 0v110M160 0v110M200 0v110"/></g>' +
-    '<g fill="#5AD6A0">' +
-    '<rect x="100" y="22" width="40" height="10"/><rect x="90" y="32" width="60" height="10"/>' +
-    '<rect x="90" y="42" width="20" height="10"/><rect x="130" y="42" width="20" height="10"/>' +
-    '<rect x="90" y="52" width="60" height="10"/><rect x="80" y="62" width="80" height="10"/>' +
-    '<rect x="80" y="72" width="20" height="10"/><rect x="140" y="72" width="20" height="10"/></g>' +
-    '<g fill="#0E1420"><rect x="110" y="42" width="10" height="10"/><rect x="120" y="42" width="10" height="10"/></g>' +
-    '<g fill="#F2C13D"><rect x="30" y="80" width="10" height="10"/><rect x="200" y="30" width="10" height="10"/></g>',
+/* Menaikkan atau menurunkan terang sebuah hex. amt -1..1 */
+function saShade(hex, amt){
+  const n = parseInt(String(hex).slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  if(amt >= 0){
+    r += (255 - r) * amt; g += (255 - g) * amt; b += (255 - b) * amt;
+  }else{
+    const f = 1 + amt; r *= f; g *= f; b *= f;
+  }
+  const h2 = function(v){ return ('0' + Math.max(0, Math.min(255, Math.round(v))).toString(16)).slice(-2); };
+  return '#' + h2(r) + h2(g) + h2(b);
+}
+function saHas(p, name){ return (p.fx || []).indexOf(name) >= 0; }
 
-  'Tema karakter':
-    '<rect width="240" height="110" fill="#0B0E1C"/>' +
-    '<circle cx="120" cy="55" r="42" fill="#1A2340" opacity=".55"/>' +
-    '<path d="M92 26h56q10 0 10 12v30q0 16-16 24l-22 12-22-12q-16-8-16-24V38q0-12 10-12z" fill="#39406B"/>' +
-    '<path d="M92 26h56q10 0 10 12v10H82V38q0-12 10-12z" fill="#4A5490"/>' +
-    '<rect x="90" y="52" width="60" height="13" rx="6" fill="#4FD8EA"/>' +
-    '<rect x="94" y="55" width="52" height="4" rx="2" fill="#BFF6FF" opacity=".8"/>' +
-    '<path d="M104 78h32l-6 12h-20z" fill="#2B3157"/>' +
-    '<path d="M74 34l-12-8M166 34l12-8" stroke="#4FD8EA" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>',
+function saColor(p, role){
+  if(role === 'shadow') return 'rgba(0,0,0,.35)';
+  if(role === 'hair') return p.h;
+  if(role === 'cloth') return p.c;
+  if(role === 'accent') return p.ac;
+  return p.sk;
+}
 
-  'Teknik & desain':
-    '<rect width="240" height="110" fill="#0E3A6B"/>' +
-    '<g stroke="#2E6BA8" stroke-width="1" opacity=".75">' +
-    '<path d="M0 18h240M0 36h240M0 54h240M0 72h240M0 90h240M20 0v110M50 0v110M80 0v110M110 0v110M140 0v110M170 0v110M200 0v110M230 0v110"/></g>' +
-    '<g stroke="#EAF3FF" stroke-width="2.2" fill="none">' +
-    '<path d="M120 24l44 24v30l-44 24-44-24V48z"/>' +
-    '<path d="M120 24v30M120 54l44-6M120 54l-44-6M120 54v48"/></g>' +
-    '<path d="M24 92h40M24 88v8M64 88v8" stroke="#9CC6F0" stroke-width="1.6"/>' +
-    '<circle cx="196" cy="30" r="10" fill="none" stroke="#9CC6F0" stroke-width="1.6"/>' +
-    '<path d="M186 30h20M196 20v20" stroke="#9CC6F0" stroke-width="1.2"/>',
+/* Satu bentuk dasar, dengan opsi menjadikannya kotak (gaya blocky). */
+function saShape(pt, attrs, blocky){
+  if(pt.t === 'ellipse'){
+    if(blocky){
+      return '<rect x="' + (pt.cx - pt.rx) + '" y="' + (pt.cy - pt.ry) + '" width="' + (pt.rx * 2) +
+             '" height="' + (pt.ry * 2) + '" ' + attrs + '/>';
+    }
+    return '<ellipse cx="' + pt.cx + '" cy="' + pt.cy + '" rx="' + pt.rx + '" ry="' + pt.ry + '" ' + attrs + '/>';
+  }
+  if(pt.t === 'rect'){
+    return '<rect x="' + pt.x + '" y="' + pt.y + '" width="' + pt.w + '" height="' + pt.h +
+           '" rx="' + (blocky ? 0 : (pt.r || 0)) + '" ' + attrs + '/>';
+  }
+  if(pt.t === 'path') return '<path d="' + pt.d + '" ' + attrs + '/>';
+  return '';
+}
 
-  'Foto & produk':
-    '<rect width="240" height="110" fill="#E7ECF3"/>' +
-    '<ellipse cx="86" cy="92" rx="44" ry="7" fill="#B6C2D2"/>' +
-    '<rect x="66" y="36" width="40" height="52" rx="6" fill="#8FA6C0"/>' +
-    '<rect x="78" y="24" width="16" height="14" rx="3" fill="#6F87A5"/>' +
-    '<rect x="70" y="42" width="5" height="38" rx="2.5" fill="#FFFFFF" opacity=".75"/>' +
-    '<rect x="74" y="56" width="24" height="18" rx="2" fill="#FDFEFF"/>' +
-    '<g transform="translate(180,52)">' +
-    '<circle r="30" fill="#2B3648"/><circle r="15" fill="#0E1420"/>' +
-    '<g fill="#3E4C63"><path d="M0-30 26-15 15-9 0-18z"/><path d="M26-15v30l-11-6V-9z"/><path d="M26 15 0 30 0 18 15 9z"/><path d="M0 30-26 15-15 9 0 18z"/><path d="M-26 15v-30l11 6v18z"/><path d="M-26-15 0-30 0-18-15-9z"/></g>' +
-    '<circle r="15" fill="none" stroke="#6FE0FF" stroke-width="1.6" opacity=".7"/></g>',
+function saEye(p, pt){
+  const dark = p.ln || '#1a1a1a';
+  if(saHas(p, 'blackeye')){
+    return '<ellipse cx="' + pt.cx + '" cy="' + pt.cy + '" rx="4.2" ry="5.6" fill="#0a0a0a"/>';
+  }
+  if(saHas(p, 'bigeye')){
+    return '<ellipse cx="' + pt.cx + '" cy="' + pt.cy + '" rx="5.4" ry="7" fill="#ffffff"/>' +
+           '<circle cx="' + pt.cx + '" cy="' + (pt.cy + 0.8) + '" r="3.4" fill="' + p.ac + '"/>' +
+           '<circle cx="' + (pt.cx - 1.4) + '" cy="' + (pt.cy - 1.8) + '" r="1.3" fill="#ffffff"/>';
+  }
+  return '<ellipse cx="' + pt.cx + '" cy="' + pt.cy + '" rx="2.6" ry="3.2" fill="' + dark + '"/>';
+}
+function saMouth(p, pt){
+  return '<path d="M' + (pt.cx - 5) + ' ' + pt.cy + 'q5 4 10 0" stroke="' + (p.ln || '#333') +
+         '" stroke-width="1.6" fill="none" stroke-linecap="round"/>';
+}
 
-  'Material & patung':
-    '<rect width="240" height="110" fill="#171A22"/>' +
-    '<defs>' +
-    '<radialGradient id="ga9a" cx="34%" cy="28%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#A8AEB8"/></radialGradient>' +
-    '<radialGradient id="ga9b" cx="34%" cy="28%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#B07C18"/></radialGradient>' +
-    '<radialGradient id="ga9c" cx="34%" cy="28%"><stop offset="0" stop-color="#C98A5E"/><stop offset="1" stop-color="#5E3320"/></radialGradient>' +
-    '</defs>' +
-    '<ellipse cx="120" cy="96" rx="104" ry="8" fill="#0D0F15"/>' +
-    '<circle cx="56" cy="56" r="28" fill="url(#ga9a)"/>' +
-    '<circle cx="120" cy="56" r="28" fill="url(#ga9b)"/>' +
-    '<circle cx="184" cy="56" r="28" fill="url(#ga9c)"/>' +
-    '<path d="M44 40q10-8 20-4" stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>' +
-    '<path d="M108 40q10-8 20-4" stroke="#FFF6D8" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>' +
-    '<g fill="#3E2415" opacity=".55"><circle cx="176" cy="50" r="3"/><circle cx="192" cy="62" r="2.4"/><circle cx="184" cy="70" r="2"/></g>',
+/* ---------- latar ---------- */
+function saBg(p){
+  if(Array.isArray(p.bg)){
+    return '<defs><linearGradient id="sabg' + saUid + '" x1="0" y1="0" x2="0" y2="1">' +
+           '<stop offset="0" stop-color="' + p.bg[0] + '"/><stop offset="1" stop-color="' + p.bg[1] + '"/>' +
+           '</linearGradient></defs><rect width="240" height="110" fill="url(#sabg' + saUid + ')"/>';
+  }
+  return '<rect width="240" height="110" fill="' + p.bg + '"/>';
+}
 
-  'Kertas & kerajinan':
-    '<rect width="240" height="110" fill="#F3ECE0"/>' +
-    '<path d="M40 82L78 26l38 56z" fill="#E8DCC6"/>' +
-    '<path d="M78 26v56l38 0z" fill="#D3C2A4"/>' +
-    '<path d="M78 26 40 82h38z" fill="#F7F1E5"/>' +
-    '<path d="M140 34h72v50h-72z" fill="#E0D4BE"/>' +
-    '<path d="M148 42h56v34h-56z" fill="#F7F1E5"/>' +
-    '<path d="M156 50h40v18h-40z" fill="#D3C2A4"/>' +
-    '<path d="M132 96q14-10 28 0t28 0 28 0" stroke="#B4472E" stroke-width="2.6" fill="none" stroke-dasharray="7 5" stroke-linecap="round"/>' +
-    '<path d="M30 96q14-10 28 0t28 0" stroke="#3F7FD8" stroke-width="2.6" fill="none" stroke-dasharray="7 5" stroke-linecap="round"/>',
+/* ---------- badan gambar per mode ---------- */
+function saBody(p, parts){
+  const mode = p.m, lw = p.lw || 2.2, blocky = saHas(p, 'blocky');
+  let defs = '', out = '';
 
-  'Branding & cetak':
-    '<rect width="240" height="110" fill="#12141F"/>' +
-    '<rect x="14" y="10" width="74" height="90" rx="3" fill="#1E2740"/>' +
-    '<circle cx="51" cy="42" r="18" fill="#F0862E" opacity=".55"/>' +
-    '<path d="M40 58q11-8 22 0l4 20H36z" fill="#0B0E1C"/>' +
-    '<rect x="22" y="84" width="58" height="7" rx="2" fill="#F5E9D8"/>' +
-    '<rect x="100" y="10" width="60" height="90" rx="3" fill="#EDE6DA"/>' +
-    '<rect x="108" y="18" width="44" height="6" rx="2" fill="#B4472E"/>' +
-    '<rect x="108" y="30" width="44" height="40" rx="2" fill="#8FA6C0"/>' +
-    '<g fill="#8C8579"><rect x="108" y="76" width="44" height="3.5" rx="1.75"/><rect x="108" y="84" width="30" height="3.5" rx="1.75"/></g>' +
-    '<rect x="172" y="26" width="56" height="58" rx="8" fill="#3B66FF"/>' +
-    '<path d="M188 66l12-24 12 24z" fill="#EAF0FF"/>' +
-    '<circle cx="200" cy="40" r="5" fill="#EAF0FF" opacity=".8"/>',
+  if(mode === 'plastic'){
+    defs += '<defs>';
+    ['skin','hair','cloth','accent'].forEach(function(role, i){
+      const c = saColor(p, role);
+      defs += '<radialGradient id="sag' + i + saUid + '" cx="34%" cy="26%" r="78%">' +
+              '<stop offset="0" stop-color="' + saShade(c, .38) + '"/>' +
+              '<stop offset="1" stop-color="' + saShade(c, -.32) + '"/></radialGradient>';
+    });
+    defs += '</defs>';
+  }
+  if(mode === 'paint'){
+    defs += '<defs><filter id="sablur' + saUid + '"><feGaussianBlur stdDeviation="' + (p.bl || 1) + '"/></filter></defs>';
+  }
+  if(mode === 'glow'){
+    defs += '<defs><filter id="saglow' + saUid + '" x="-40%" y="-40%" width="180%" height="180%">' +
+            '<feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/>' +
+            '<feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+  }
 
-  'Teknologi & objek scene':
-    '<rect width="240" height="110" fill="#050A12"/>' +
-    '<g stroke="#0F3A4A" stroke-width="1"><path d="M0 26h240M0 84h240M60 0v110M180 0v110"/></g>' +
-    '<g stroke="#4FD8EA" stroke-width="1.8" fill="none">' +
-    '<path d="M78 34l34-14 34 14v34l-34 14-34-14z"/>' +
-    '<path d="M78 34l34 14 34-14M112 48v34"/></g>' +
-    '<g stroke="#4FD8EA" stroke-width="1.6" fill="none" opacity=".9">' +
-    '<circle cx="190" cy="56" r="20"/><circle cx="190" cy="56" r="8"/>' +
-    '<path d="M190 30v10M190 72v10M164 56h10M206 56h10"/></g>' +
-    '<g fill="#4FD8EA" opacity=".75"><rect x="14" y="34" width="30" height="3"/><rect x="14" y="42" width="20" height="3"/><rect x="14" y="50" width="26" height="3"/><rect x="14" y="58" width="14" height="3"/></g>',
+  const gradIdx = { skin:0, hair:1, cloth:2, accent:3 };
+  parts.forEach(function(pt){
+    if(pt.role === 'shadow'){
+      out += saShape(pt, 'fill="rgba(0,0,0,.35)"', false);
+      return;
+    }
+    if(pt.t === 'eye'){
+      if(mode !== 'tech' && mode !== 'sketch') out += saEye(p, pt);
+      else out += '<ellipse cx="' + pt.cx + '" cy="' + pt.cy + '" rx="2.4" ry="3" fill="' + p.ln + '"/>';
+      return;
+    }
+    if(pt.t === 'mouth'){ out += saMouth(p, pt); return; }
 
-  'Jarak kamera':
-    '<rect width="240" height="110" fill="#101828"/>' +
-    '<g stroke="#3A4870" stroke-width="1.6" fill="#182240">' +
-    '<rect x="10" y="18" width="66" height="74" rx="3"/>' +
-    '<rect x="88" y="18" width="66" height="74" rx="3"/>' +
-    '<rect x="166" y="18" width="64" height="74" rx="3"/></g>' +
-    '<g fill="#7C94FF">' +
-    '<circle cx="43" cy="52" r="26"/>' +
-    '<circle cx="121" cy="44" r="14"/><path d="M104 92q17-30 34 0z"/>' +
-    '<circle cx="198" cy="60" r="6"/><path d="M191 92q7-16 14 0z"/></g>' +
-    '<g fill="#A9B4D6" font-family="monospace" font-size="9">' +
-    '<text x="26" y="104">dekat</text><text x="102" y="104">sedang</text><text x="184" y="104">jauh</text></g>',
+    const c = saColor(p, pt.role);
+    let attrs;
+    if(mode === 'sketch')      attrs = 'fill="none" stroke="' + p.ln + '" stroke-width="' + lw + '" stroke-linejoin="round"';
+    else if(mode === 'tech')   attrs = 'fill="none" stroke="' + p.ac + '" stroke-width="' + lw + '"';
+    else if(mode === 'glow')   attrs = 'fill="' + c + '" stroke="' + p.ln + '" stroke-width="' + lw + '" filter="url(#saglow' + saUid + ')"';
+    else if(mode === 'plastic')attrs = 'fill="url(#sag' + (gradIdx[pt.role] || 0) + saUid + ')"';
+    else if(mode === 'paint')  attrs = 'fill="' + c + '" filter="url(#sablur' + saUid + ')"';
+    else if(mode === 'flat')   attrs = 'fill="' + c + '"';
+    else if(mode === 'print')  attrs = 'fill="' + c + '" stroke="' + p.ln + '" stroke-width="' + lw + '" stroke-linejoin="round"';
+    else                       attrs = 'fill="' + c + '" stroke="' + p.ln + '" stroke-width="' + lw + '" stroke-linejoin="round"';
+    out += saShape(pt, attrs, blocky);
+  });
 
-  'Sudut kamera':
-    '<rect width="240" height="110" fill="#101828"/>' +
-    '<path d="M96 92h48l-6-42q-18-8-36 0z" fill="#7C94FF"/>' +
-    '<circle cx="120" cy="38" r="13" fill="#7C94FF"/>' +
-    '<g fill="#FFB84D">' +
-    '<path d="M118 8h-16v10h16l-4-5z"/><rect x="102" y="6" width="4" height="14" rx="1"/>' +
-    '<path d="M40 82l14-6-2 10z"/><rect x="26" y="74" width="14" height="10" rx="2"/>' +
-    '<path d="M200 30l-14 6 2-10z"/><rect x="200" y="26" width="14" height="10" rx="2"/></g>' +
-    '<g stroke="#FFB84D" stroke-width="1.4" stroke-dasharray="4 4" fill="none" opacity=".8">' +
-    '<path d="M110 20L118 32M44 80L104 62M198 34L138 54"/></g>' +
-    '<g fill="#A9B4D6" font-family="monospace" font-size="8">' +
-    '<text x="122" y="16">atas</text><text x="16" y="98">bawah</text><text x="192" y="20">sejajar</text></g>',
+  return defs + out;
+}
 
-  'Komposisi':
-    '<rect width="240" height="110" fill="#101828"/>' +
-    '<rect x="20" y="12" width="200" height="86" fill="#182240" stroke="#3A4870" stroke-width="1.6"/>' +
-    '<g stroke="#FFB84D" stroke-width="1.2" stroke-dasharray="5 5" opacity=".85">' +
-    '<path d="M86.7 12v86M153.3 12v86M20 40.7h200M20 69.3h200"/></g>' +
-    '<circle cx="86.7" cy="40.7" r="6" fill="#FFB84D"/>' +
-    '<circle cx="153.3" cy="55" r="15" fill="#7C94FF"/>' +
-    '<path d="M136 98q17-30 34 0z" fill="#7C94FF"/>' +
-    '<path d="M20 98L153 62" stroke="#4FD8EA" stroke-width="1.6" opacity=".7"/>' +
-    '<path d="M220 98L153 62" stroke="#4FD8EA" stroke-width="1.6" opacity=".7"/>',
+/* ---------- efek permukaan ---------- */
+function saFx(p, kind){
+  let out = '';
+  if(saHas(p, 'grid')){
+    out += '<g stroke="' + (p.ac || '#fff') + '" stroke-width="1" opacity=".28">' +
+           '<path d="M0 88h240M0 98h240M40 82v28M90 82v28M150 82v28M200 82v28"/></g>';
+  }
+  if(saHas(p, 'helm')){
+    out += '<path d="M95 44q0-27 25-27t25 27q-8-8-25-8t-25 8z" fill="' + p.ac + '" stroke="' + p.ln +
+           '" stroke-width="1.8"/><path d="M118 20h4v26h-4z" fill="' + p.ln + '" opacity=".6"/>';
+  }
+  if(saHas(p, 'mask')){
+    out += '<path d="M98 52q22 8 44 0v14q-22 10-44 0z" fill="' + p.c + '" opacity=".96"/>';
+  }
+  if(saHas(p, 'ear')){
+    out += '<path d="M97 44l-9-12 11 4zM143 44l9-12-11 4z" fill="' + p.sk + '" stroke="' + p.ln + '" stroke-width="1.4"/>';
+  }
+  if(saHas(p, 'hat')){
+    out += '<path d="M92 26h56l-28-24z" fill="' + p.c + '" stroke="' + p.ln + '" stroke-width="1.6"/>';
+  }
+  if(saHas(p, 'panel')){
+    out += '<g stroke="' + p.ac + '" stroke-width="1.2" opacity=".85" fill="none">' +
+           '<path d="M104 40h32M104 56h32M120 30v40"/></g>';
+  }
+  if(saHas(p, 'joint')){
+    out += '<g fill="none" stroke="' + p.ln + '" stroke-width="1.4" opacity=".7">' +
+           '<circle cx="120" cy="82" r="5"/><path d="M92 96h56"/></g>';
+  }
+  if(saHas(p, 'stitch')){
+    out += '<g fill="none" stroke="' + p.ln + '" stroke-width="1.3" stroke-dasharray="3 3" opacity=".85">' +
+           '<ellipse cx="120" cy="48" rx="23" ry="27"/><ellipse cx="120" cy="100" rx="45" ry="26"/></g>';
+  }
+  if(saHas(p, 'knit')){
+    out += '<g stroke="' + saShade(p.c, -.2) + '" stroke-width="1.2" opacity=".6" fill="none">' +
+           '<path d="M78 92q6-6 12 0t12 0 12 0 12 0 12 0 12 0 12 0"/>' +
+           '<path d="M78 100q6-6 12 0t12 0 12 0 12 0 12 0 12 0 12 0"/></g>';
+  }
+  if(saHas(p, 'stud')){
+    out += '<g fill="' + saShade(p.c, .18) + '"><circle cx="104" cy="84" r="3.4"/><circle cx="120" cy="84" r="3.4"/><circle cx="136" cy="84" r="3.4"/></g>';
+  }
+  if(saHas(p, 'sparkle')){
+    out += '<g fill="' + p.ac + '" opacity=".9">' +
+           '<path d="M56 30l2.4 5.6L64 38l-5.6 2.4L56 46l-2.4-5.6L48 38l5.6-2.4z"/>' +
+           '<path d="M186 62l1.8 4.2 4.2 1.8-4.2 1.8-1.8 4.2-1.8-4.2-4.2-1.8 4.2-1.8z"/></g>';
+  }
+  if(saHas(p, 'hatch')){
+    out += '<g stroke="' + p.ln + '" stroke-width="1" opacity=".45">' +
+           '<path d="M128 36l14 14M132 44l12 12M136 54l10 10M124 62l18 18M108 84l22 22"/></g>';
+  }
+  if(saHas(p, 'construct')){
+    out += '<g stroke="' + p.ln + '" stroke-width=".8" opacity=".35" fill="none">' +
+           '<ellipse cx="120" cy="48" rx="27" ry="31"/><path d="M120 17v62M93 48h54"/></g>';
+  }
+  if(saHas(p, 'speed')){
+    out += '<g stroke="' + p.ln + '" stroke-width="1.6" opacity=".55">' +
+           '<path d="M6 20h44M6 32h32M6 44h40M190 24h44M202 36h32M190 48h44"/></g>';
+  }
+  if(saHas(p, 'blinds')){
+    out += '<g fill="#000000" opacity=".45"><rect x="0" y="16" width="240" height="7"/>' +
+           '<rect x="0" y="34" width="240" height="7"/><rect x="0" y="52" width="240" height="7"/>' +
+           '<rect x="0" y="70" width="240" height="7"/></g>';
+  }
+  if(saHas(p, 'halftone')){
+    out += '<defs><pattern id="saht' + saUid + '" width="6" height="6" patternUnits="userSpaceOnUse">' +
+           '<circle cx="3" cy="3" r="1.5" fill="' + p.ln + '"/></pattern></defs>' +
+           '<rect width="240" height="110" fill="url(#saht' + saUid + ')" opacity=".22"/>';
+  }
+  if(saHas(p, 'shine')){
+    out += '<path d="M150 110L215 0h18L168 110z" fill="#ffffff" opacity=".22"/>';
+  }
+  if(saHas(p, 'bars')){
+    out += '<g fill="#000000"><rect x="0" y="0" width="240" height="12"/><rect x="0" y="98" width="240" height="12"/></g>';
+  }
+  if(saHas(p, 'vignette')){
+    out += '<defs><radialGradient id="savig' + saUid + '" cx="50%" cy="46%" r="72%">' +
+           '<stop offset=".55" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".72"/>' +
+           '</radialGradient></defs><rect width="240" height="110" fill="url(#savig' + saUid + ')"/>';
+  }
+  if(saHas(p, 'grain')){
+    out += '<defs><filter id="sagr' + saUid + '"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2"/>' +
+           '<feColorMatrix type="saturate" values="0"/></filter></defs>' +
+           '<rect width="240" height="110" filter="url(#sagr' + saUid + ')" opacity=".17"/>';
+  }
+  return out;
+}
 
-  'Waktu & alam':
-    '<defs><linearGradient id="ga16" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="#1B2A5A"/><stop offset=".55" stop-color="#E88A4A"/><stop offset="1" stop-color="#FFD9A0"/></linearGradient></defs>' +
-    '<rect width="240" height="110" fill="url(#ga16)"/>' +
-    '<path d="M24 78a96 96 0 0 1 192 0" stroke="#FFFFFF" stroke-width="1.4" fill="none" stroke-dasharray="4 6" opacity=".55"/>' +
-    '<circle cx="40" cy="52" r="9" fill="#CFE0FF"/>' +
-    '<circle cx="120" cy="24" r="13" fill="#FFF6D0"/>' +
-    '<circle cx="200" cy="52" r="11" fill="#FFB05E"/>' +
-    '<path d="M0 82q40-14 78-4t76 2 86-10v40H0z" fill="#243B2E"/>' +
-    '<path d="M0 94q52-10 106 2t134-6v20H0z" fill="#16281F"/>',
-
-  'Studio & dramatis':
-    '<rect width="240" height="110" fill="#0B0D14"/>' +
-    '<defs><radialGradient id="ga17" cx="30%" cy="26%" r="72%">' +
-    '<stop offset="0" stop-color="#FFF3DA"/><stop offset=".55" stop-color="#8A7A62"/><stop offset="1" stop-color="#14161E"/></radialGradient></defs>' +
-    '<rect x="14" y="20" width="34" height="46" rx="3" fill="#2A3247"/>' +
-    '<rect x="18" y="24" width="26" height="38" rx="2" fill="#FFF3DA" opacity=".85"/>' +
-    '<g stroke="#FFF3DA" stroke-width="1.2" opacity=".4"><path d="M50 32L86 42M50 44L86 50M50 56L86 58"/></g>' +
-    '<circle cx="132" cy="52" r="34" fill="url(#ga17)"/>' +
-    '<ellipse cx="158" cy="94" rx="46" ry="7" fill="#000000" opacity=".75"/>' +
-    '<path d="M166 40q12 14 6 34" stroke="#FFD9A8" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".55"/>',
-
-  'Sumber khusus':
-    '<rect width="240" height="110" fill="#07080E"/>' +
-    '<defs>' +
-    '<radialGradient id="ga18a" cx="50%" cy="50%"><stop offset="0" stop-color="#FFB05E" stop-opacity=".8"/><stop offset="1" stop-color="#FFB05E" stop-opacity="0"/></radialGradient>' +
-    '<radialGradient id="ga18b" cx="50%" cy="50%"><stop offset="0" stop-color="#FF3FD0" stop-opacity=".7"/><stop offset="1" stop-color="#FF3FD0" stop-opacity="0"/></radialGradient>' +
-    '<radialGradient id="ga18c" cx="50%" cy="50%"><stop offset="0" stop-color="#4FD8EA" stop-opacity=".7"/><stop offset="1" stop-color="#4FD8EA" stop-opacity="0"/></radialGradient>' +
-    '</defs>' +
-    '<circle cx="46" cy="58" r="38" fill="url(#ga18a)"/>' +
-    '<circle cx="120" cy="58" r="38" fill="url(#ga18b)"/>' +
-    '<circle cx="194" cy="58" r="38" fill="url(#ga18c)"/>' +
-    '<rect x="41" y="58" width="10" height="26" rx="2" fill="#D6C9B2"/>' +
-    '<path d="M46 44q7 8 0 14q-7-6 0-14z" fill="#FFD08A"/>' +
-    '<rect x="100" y="46" width="40" height="20" rx="4" fill="none" stroke="#FF6FE0" stroke-width="2.6"/>' +
-    '<rect x="108" y="66" width="24" height="18" fill="#2A1140"/>' +
-    '<rect x="176" y="44" width="36" height="26" rx="3" fill="#0E2A38" stroke="#4FD8EA" stroke-width="1.6"/>' +
-    '<rect x="188" y="70" width="12" height="12" fill="#0E2A38"/>' +
-    '<g fill="#4FD8EA" opacity=".8"><rect x="181" y="50" width="18" height="2.5"/><rect x="181" y="56" width="12" height="2.5"/></g>',
-
-  'Tenang & hangat':
-    '<defs><linearGradient id="ga19" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="#FFE7C4"/><stop offset="1" stop-color="#F4B98E"/></linearGradient></defs>' +
-    '<rect width="240" height="110" fill="url(#ga19)"/>' +
-    '<circle cx="190" cy="30" r="16" fill="#FFF6DC"/>' +
-    '<circle cx="190" cy="30" r="26" fill="#FFF6DC" opacity=".3"/>' +
-    '<path d="M0 74q46-22 92-6t148-8v50H0z" fill="#EFAF8B"/>' +
-    '<path d="M0 88q60-16 120 2t120-8v28H0z" fill="#D98C6A"/>' +
-    '<g fill="#FFFFFF" opacity=".55"><circle cx="52" cy="34" r="4"/><circle cx="92" cy="24" r="3"/><circle cx="126" cy="40" r="2.6"/></g>',
-
-  'Gelap & tegang':
-    '<rect width="240" height="110" fill="#07080C"/>' +
-    '<path d="M108 0h20l-8 110h-6z" fill="#8FA6C0" opacity=".22"/>' +
-    '<path d="M112 0h10l-4 110h-3z" fill="#CFE0FF" opacity=".38"/>' +
-    '<path d="M40 110L96 22l10 88z" fill="#000000" opacity=".85"/>' +
-    '<path d="M200 110L142 30l-10 80z" fill="#000000" opacity=".85"/>' +
-    '<circle cx="120" cy="52" r="5" fill="#E8535A"/>' +
-    '<circle cx="120" cy="52" r="14" fill="#E8535A" opacity=".18"/>' +
-    '<g stroke="#2A2F3D" stroke-width="1.4" opacity=".8"><path d="M12 16l16 10M228 16l-16 10M12 94l16-10M228 94l-16-10"/></g>',
-
-  'Besar & spekulatif':
-    '<defs><linearGradient id="ga21" x1="0" y1="0" x2="0" y2="1">' +
-    '<stop offset="0" stop-color="#1A2350"/><stop offset="1" stop-color="#070A16"/></linearGradient></defs>' +
-    '<rect width="240" height="110" fill="url(#ga21)"/>' +
-    '<circle cx="120" cy="34" r="30" fill="#3A4A8A" opacity=".35"/>' +
-    '<path d="M86 96V22l34-14 34 14v74z" fill="#0B1030"/>' +
-    '<path d="M120 8v88" stroke="#7C94FF" stroke-width="1.6" opacity=".5"/>' +
-    '<path d="M96 40h48M92 58h56M96 76h48" stroke="#7C94FF" stroke-width="1.4" opacity=".35"/>' +
-    '<rect x="0" y="96" width="240" height="14" fill="#05070F"/>' +
-    '<circle cx="44" cy="90" r="4" fill="#CFE0FF"/>' +
-    '<path d="M40 96q4-8 8 0z" fill="#CFE0FF"/>' +
-    '<g fill="#FFFFFF" opacity=".5"><circle cx="26" cy="20" r="1.4"/><circle cx="200" cy="16" r="1.6"/><circle cx="216" cy="46" r="1.2"/><circle cx="52" cy="44" r="1.2"/></g>',
-
-  'Tekstur & material':
-    '<rect width="240" height="110" fill="#12141C"/>' +
-    '<defs>' +
-    '<linearGradient id="ga22a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#B8C2CF"/><stop offset="1" stop-color="#6E7A8C"/></linearGradient>' +
-    '<linearGradient id="ga22b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B5764A"/><stop offset="1" stop-color="#6E4326"/></linearGradient>' +
-    '</defs>' +
-    '<rect x="10" y="10" width="108" height="42" rx="4" fill="#8A4B2A"/>' +
-    '<g fill="#5E2F17" opacity=".7"><circle cx="30" cy="24" r="4"/><circle cx="60" cy="38" r="5"/><circle cx="90" cy="20" r="3.4"/><circle cx="104" cy="40" r="4"/><circle cx="44" cy="44" r="2.6"/></g>' +
-    '<rect x="124" y="10" width="106" height="42" rx="4" fill="url(#ga22a)"/>' +
-    '<path d="M134 48L172 10" stroke="#FFFFFF" stroke-width="7" opacity=".8"/>' +
-    '<rect x="10" y="58" width="108" height="42" rx="4" fill="url(#ga22b)"/>' +
-    '<g stroke="#4E2F19" stroke-width="1.6" opacity=".8" fill="none"><path d="M10 68q54-8 108 0M10 80q54 8 108 0M10 92q54-6 108 0"/></g>' +
-    '<rect x="124" y="58" width="106" height="42" rx="4" fill="#3F5B86"/>' +
-    '<g stroke="#5E7FB0" stroke-width="1.4" opacity=".9"><path d="M132 58v42M146 58v42M160 58v42M174 58v42M188 58v42M202 58v42M216 58v42M124 66h106M124 76h106M124 86h106M124 96h106"/></g>',
-
-  'Warna':
-    '<rect width="240" height="110" fill="#12141C"/>' +
-    '<g><rect x="10" y="12" width="52" height="38" rx="4" fill="#F2F4F8"/><rect x="10" y="12" width="26" height="38" rx="4" fill="#8C929C"/><rect x="10" y="12" width="12" height="38" fill="#1E2128"/></g>' +
-    '<g><rect x="70" y="12" width="52" height="38" rx="4" fill="#F2A03C"/><rect x="70" y="12" width="26" height="38" fill="#E2542E"/><rect x="70" y="12" width="12" height="38" fill="#8E2418"/></g>' +
-    '<g><rect x="130" y="12" width="52" height="38" rx="4" fill="#7FD8E8"/><rect x="130" y="12" width="26" height="38" fill="#3E86B8"/><rect x="130" y="12" width="12" height="38" fill="#1B3E63"/></g>' +
-    '<g><rect x="190" y="12" width="40" height="38" rx="4" fill="#E8E2D2"/><rect x="190" y="12" width="20" height="38" fill="#B8AE96"/></g>' +
-    '<rect x="10" y="60" width="220" height="18" rx="4" fill="#2A2F3D"/>' +
-    '<g><rect x="14" y="63" width="40" height="12" rx="2" fill="#FF3FD0"/><rect x="60" y="63" width="40" height="12" rx="2" fill="#4FD8EA"/><rect x="106" y="63" width="40" height="12" rx="2" fill="#5AE88A"/><rect x="152" y="63" width="40" height="12" rx="2" fill="#FFD84F"/><rect x="198" y="63" width="28" height="12" rx="2" fill="#B06FFF"/></g>' +
-    '<g fill="#A9B4D6" font-family="monospace" font-size="8"><text x="10" y="94">mono</text><text x="70" y="94">hangat</text><text x="130" y="94">dingin</text><text x="190" y="94">muted</text></g>',
-
-  'Ketajaman & lensa':
-    '<rect width="240" height="110" fill="#0C1018"/>' +
-    '<defs><filter id="ga24"><feGaussianBlur stdDeviation="5"/></filter></defs>' +
-    '<g filter="url(#ga24)" opacity=".85">' +
-    '<circle cx="182" cy="34" r="17" fill="#3B66FF"/><circle cx="212" cy="66" r="13" fill="#7C94FF"/><circle cx="160" cy="76" r="11" fill="#4FD8EA"/></g>' +
-    '<circle cx="72" cy="55" r="30" fill="none" stroke="#EAF0FF" stroke-width="2.6"/>' +
-    '<circle cx="72" cy="55" r="15" fill="none" stroke="#EAF0FF" stroke-width="2"/>' +
-    '<circle cx="72" cy="55" r="4" fill="#EAF0FF"/>' +
-    '<path d="M72 17v10M72 83v10M34 55h10M100 55h10" stroke="#EAF0FF" stroke-width="2" stroke-linecap="round"/>' +
-    '<path d="M108 96L214 14" stroke="#FFD9A8" stroke-width="2" opacity=".45"/>' +
-    '<circle cx="150" cy="58" r="7" fill="#FFD9A8" opacity=".35"/>' +
-    '<circle cx="176" cy="38" r="11" fill="#FFD9A8" opacity=".2"/>'
+/* ---------- mode khusus: pixel & low poly ---------- */
+const SA_PIXMAP = {
+  bust: ['..HHHHHH..','.HHHHHHHH.','.HSSSSSSH.','.HSESSESH.','.HSSSSSSH.',
+         '..SSMMSS..','...SSSS...','..CCCCCC..','.CCCCCCCC.','CCCCCCCCCC'],
+  object: ['...AAAA...','...HHHH...','..SSSSSS..','..SSSSSS..','..SCCCCS..',
+           '..SCCCCS..','..SSSSSS..','..SSSSSS..','..SSSSSS..','..SSSSSS..']
 };
+function saPixel(p, kind){
+  const map = SA_PIXMAP[kind] || SA_PIXMAP.bust;
+  const cell = 9, w = map[0].length * cell, x0 = (SA_W - w) / 2, y0 = (SA_H - map.length * cell) / 2;
+  const col = { H:p.h, S:p.sk, C:p.c, A:p.ac, E:p.ln, M:p.ac };
+  let out = '';
+  map.forEach(function(row, r){
+    for(let c = 0; c < row.length; c++){
+      const ch = row[c];
+      if(ch === '.') continue;
+      out += '<rect x="' + (x0 + c * cell) + '" y="' + (y0 + r * cell) + '" width="' + cell +
+             '" height="' + cell + '" fill="' + (col[ch] || p.sk) + '"/>';
+    }
+  });
+  if(saHas(p, 'cube')){
+    out += '<g stroke="rgba(0,0,0,.18)" stroke-width="1" fill="none">';
+    map.forEach(function(row, r){
+      for(let c = 0; c < row.length; c++){
+        if(row[c] === '.') continue;
+        out += '<rect x="' + (x0 + c * cell) + '" y="' + (y0 + r * cell) + '" width="' + cell + '" height="' + cell + '"/>';
+      }
+    });
+    out += '</g>';
+  }
+  return out;
+}
+
+const SA_POLY = {
+  bust: [['M120 18L98 26L120 46Z','h'],['M120 18L142 26L120 46Z','h-'],
+         ['M98 26L96 48L120 46Z','h'],['M142 26L144 48L120 46Z','h-'],
+         ['M96 48L106 68L120 46Z','sk'],['M144 48L134 68L120 46Z','sk-'],
+         ['M106 68L120 78L120 46Z','sk'],['M134 68L120 78L120 46Z','sk-'],
+         ['M120 78L72 110L112 110Z','c'],['M120 78L112 110L134 110Z','c-'],
+         ['M120 78L134 110L168 110Z','ac'],
+         ['M106 42L116 42L111 50Z','ln'],['M124 42L134 42L129 50Z','ln']],
+  object: [['M120 16L138 34L120 44Z','ac'],['M120 16L102 34L120 44Z','ac-'],
+           ['M102 34L120 44L104 96Z','sk'],['M138 34L120 44L136 96Z','sk-'],
+           ['M104 96L136 96L120 104Z','c'],['M120 44L136 96L120 96Z','c-']]
+};
+function saPoly(p, kind){
+  const tris = SA_POLY[kind] || SA_POLY.bust;
+  const base = { h:p.h, sk:p.sk, c:p.c, ac:p.ac, ln:p.ln };
+  let out = '';
+  tris.forEach(function(t){
+    const dark = t[1].slice(-1) === '-';
+    const key = dark ? t[1].slice(0, -1) : t[1];
+    const col = dark ? saShade(base[key], -.28) : base[key];
+    out += '<path d="' + t[0] + '" fill="' + col + '" stroke="' + col + '" stroke-width=".6"/>';
+  });
+  return out;
+}
+
+/* ---------- perakit ---------- */
+function saRender(p, kind){
+  if(!p) return '';
+  let out = saBg(p);
+  if(p.m === 'pixel')      out += saPixel(p, kind);
+  else if(p.m === 'poly')  out += saPoly(p, kind);
+  else                     out += saBody(p, kind === 'bust' ? SA_BUST : SA_OBJ);
+  out += saFx(p, kind);
+  return out;
+}
+
+/* Parameter gambar tiap gaya.
+   m = mode gambar, bg = latar, sk = kulit/badan, h = rambut/leher,
+   c = pakaian/tutup, ac = aksen, ln = warna garis, lw = tebal garis,
+   fx = efek permukaan. */
+const STYLE_ART = {
+  gayaHidup: {
+    anime:        {m:'toon',   bg:'#FFE9F2', sk:'#FFDCC0', h:'#3A2A44', c:'#5A6FD8', ac:'#FF7FA5', ln:'#2B2233', fx:['bigeye']},
+    chibi:        {m:'toon',   bg:'#FFF3D8', sk:'#FFE2CC', h:'#C4642F', c:'#7ED9A0', ac:'#FF9BB5', ln:'#3A2A22', lw:2.6, fx:['bigeye']},
+    ghibli:       {m:'paint',  bg:'#D6E8C8', sk:'#F6D8B8', h:'#5A4030', c:'#C9584A', ac:'#8FBF6A', ln:'#4A3A2A'},
+    pixar:        {m:'plastic',bg:'#BFE0F5', sk:'#FFD9B8', h:'#4A3020', c:'#3D7FD8', ac:'#FFC93D', ln:'#2A2018', fx:['bigeye']},
+    disney:       {m:'toon',   bg:'#F2E4FA', sk:'#FFE2C6', h:'#4A2A20', c:'#C94A8A', ac:'#FFD05A', ln:'#33222A', fx:['bigeye']},
+    dreamworks:   {m:'plastic',bg:'#D8E6F2', sk:'#F0C9A0', h:'#2F2418', c:'#4A7A3A', ac:'#E8A030', ln:'#221A12'},
+    fortnite:     {m:'toon',   bg:'#5FC7E8', sk:'#FFCFA8', h:'#3A2A5A', c:'#7A3FD8', ac:'#FFD23D', ln:'#241A3A', lw:3},
+    roblox:       {m:'flat',   bg:'#CFE4F5', sk:'#F2D06A', h:'#3A2A20', c:'#D8452F', ac:'#3D6FD8', ln:'#2A2018', fx:['blocky']},
+    storybook:    {m:'paint',  bg:'#FBEBD2', sk:'#F8D9B8', h:'#8A5A32', c:'#D8734A', ac:'#7AA85A', ln:'#5A4030'},
+    fairytale:    {m:'paint',  bg:'#E8D8F5', sk:'#FFE0CC', h:'#D8A83D', c:'#8A6FD8', ac:'#F5C9E8', ln:'#5A4A70', fx:['sparkle']},
+
+    comic:        {m:'print',  bg:'#F5EFE0', sk:'#F2C49A', h:'#1A1A1A', c:'#D8392F', ac:'#3A5FD8', ln:'#141414', lw:3.2, fx:['halftone']},
+    manga:        {m:'print',  bg:'#EFEFEF', sk:'#FFFFFF', h:'#141414', c:'#9A9A9A', ac:'#141414', ln:'#141414', lw:3, fx:['halftone','speed']},
+    watercolor:   {m:'paint',  bg:'#F5F1E8', sk:'#F5CFAF', h:'#6A5A7A', c:'#7AA8C9', ac:'#D89A8A', ln:'#5A5060', bl:2.4},
+    oil:          {m:'paint',  bg:'#3A3228', sk:'#D8A878', h:'#3A2A1A', c:'#7A3A2A', ac:'#C9A45A', ln:'#241A12', bl:1.8, fx:['grain']},
+    charcoal:     {m:'sketch', bg:'#E4E1DA', sk:'#E4E1DA', h:'#2A2A2A', c:'#4A4A4A', ac:'#1A1A1A', ln:'#1A1A1A', lw:2.8, fx:['hatch','grain']},
+    pencil:       {m:'sketch', bg:'#F2EFE8', sk:'#F2EFE8', h:'#6A6A6A', c:'#8A8A8A', ac:'#5A5A5A', ln:'#5A5A5A', lw:1.4, fx:['hatch','construct']},
+    ink:          {m:'sketch', bg:'#FBFAF5', sk:'#FBFAF5', h:'#0A0A0A', c:'#0A0A0A', ac:'#0A0A0A', ln:'#0A0A0A', lw:2.6, fx:['hatch']},
+    doodle:       {m:'sketch', bg:'#FFFDF0', sk:'#FFFDF0', h:'#2A5FD8', c:'#2A5FD8', ac:'#2A5FD8', ln:'#2A5FD8', lw:2},
+    lineart:      {m:'sketch', bg:'#FFFFFF', sk:'#FFFFFF', h:'#1A1A1A', c:'#1A1A1A', ac:'#1A1A1A', ln:'#1A1A1A', lw:2.2},
+    graffiti:     {m:'toon',   bg:'#4A4A50', sk:'#FFD24A', h:'#E8365A', c:'#3DD8C9', ac:'#FFFFFF', ln:'#0A0A0A', lw:3.4, fx:['grain']},
+    popart:       {m:'print',  bg:'#FFD23D', sk:'#FF7FA5', h:'#1A1A1A', c:'#3D6FD8', ac:'#E8365A', ln:'#141414', lw:3.4, fx:['halftone']},
+    cubism:       {m:'poly',   bg:'#D8CDB8', sk:'#D8A878', h:'#7A5A3A', c:'#5A6A8A', ac:'#C9603A', ln:'#3A2A22'},
+    surreal:      {m:'paint',  bg:'#1A2A5A', sk:'#F0C9A0', h:'#D8A03D', c:'#8A3AD8', ac:'#3DD8C9', ln:'#2A1A3A', fx:['sparkle']},
+    expressionism:{m:'paint',  bg:'#D83A2F', sk:'#F5D03A', h:'#2A2A6A', c:'#3A8A5A', ac:'#FFFFFF', ln:'#1A1A2A', fx:['grain']},
+
+    renaissance:  {m:'plastic',bg:'#3A2E20', sk:'#E8C49A', h:'#4A3020', c:'#7A2A2A', ac:'#C9A45A', ln:'#2A1E14', fx:['vignette']},
+    baroque:      {m:'plastic',bg:'#1A1208', sk:'#E8C49A', h:'#2A1A10', c:'#8A2A2A', ac:'#D8A83D', ln:'#140C06', fx:['vignette']},
+    gothic:       {m:'toon',   bg:'#161420', sk:'#C9B8A8', h:'#0A0A12', c:'#2A1A3A', ac:'#6A4A8A', ln:'#080610', fx:['vignette']},
+    noir:         {m:'print',  bg:'#0E0E0E', sk:'#D8D8D8', h:'#1A1A1A', c:'#4A4A4A', ac:'#FFFFFF', ln:'#000000', fx:['blinds']},
+    vintage90s:   {m:'flat',   bg:'#C9B89A', sk:'#E0B894', h:'#5A4030', c:'#6A8A7A', ac:'#C97A5A', ln:'#4A3A2A', fx:['grain']},
+    y2k:          {m:'plastic',bg:'#C9E8F5', sk:'#FFD9C4', h:'#A8B8C9', c:'#C0C6D0', ac:'#FF6FD8', ln:'#5A6A7A', fx:['shine']},
+    vaporwave:    {m:'flat',   bg:['#FF6FD8','#6F8FFF'], sk:'#FFD9E8', h:'#6F3FD8', c:'#3DD8E8', ac:'#FFFFFF', ln:'#3A1A5A', fx:['grid']},
+    synthwave:    {m:'glow',   bg:['#2A0A4A','#0A0A1A'], sk:'#FF9FD0', h:'#6F2FD8', c:'#2A1A5A', ac:'#3DE8E8', ln:'#FF3FD0', lw:1.8, fx:['grid']},
+
+    claymation:   {m:'plastic',bg:'#E0D2C0', sk:'#E8A88A', h:'#8A5A3A', c:'#5A8A9A', ac:'#D8C05A', ln:'#7A5A48'},
+    lego:         {m:'flat',   bg:'#D8E4EF', sk:'#F2D03D', h:'#3A2A20', c:'#D8392F', ac:'#2A5FD8', ln:'#2A2018', fx:['blocky','stud']},
+    funko:        {m:'plastic',bg:'#EFE8DA', sk:'#F5D8B8', h:'#3A2A20', c:'#3D6FD8', ac:'#D8392F', ln:'#2A2018', fx:['blackeye']},
+    actionfigure: {m:'plastic',bg:'#C9D2DA', sk:'#E8B894', h:'#2A2A2A', c:'#3A5A3A', ac:'#8A8A8A', ln:'#1A1A1A', fx:['joint']},
+    puppet:       {m:'flat',   bg:'#D8C8A8', sk:'#D8A05A', h:'#7A4A2A', c:'#8A3A3A', ac:'#C9A45A', ln:'#5A3A20', fx:['joint','grain']},
+    felt:         {m:'flat',   bg:'#E8DCC8', sk:'#F0C9A0', h:'#C97A5A', c:'#7AA85A', ac:'#F5E0B8', ln:'#8A6A4A', fx:['stitch']},
+    knit:         {m:'flat',   bg:'#E4DCD0', sk:'#E8C9A8', h:'#B85A4A', c:'#5A7A9A', ac:'#D8C4A0', ln:'#8A6A5A', fx:['knit']},
+
+    pixelart:     {m:'pixel',  bg:'#2A2A4A', sk:'#F2C49A', h:'#8A3A2A', c:'#3A6AD8', ac:'#F2D03D', ln:'#1A1A2A'},
+    pixelportrait:{m:'pixel',  bg:'#3A2A4A', sk:'#E8B894', h:'#2A2A3A', c:'#7A5A8A', ac:'#D8A05A', ln:'#1A1220'},
+    lowpoly:      {m:'poly',   bg:'#2A3A5A', sk:'#E8C4A0', h:'#5A4A6A', c:'#3D8A9A', ac:'#F2D03D', ln:'#1A2438'},
+    voxel:        {m:'pixel',  bg:'#8FC9E8', sk:'#E8C4A0', h:'#6A4A3A', c:'#4A8A5A', ac:'#D8B85A', ln:'#3A2A22', fx:['cube']},
+    minecraft:    {m:'pixel',  bg:'#7FBFE8', sk:'#C9906A', h:'#3A2A1A', c:'#3D8AC9', ac:'#5A8A3A', ln:'#2A1F14', fx:['cube']},
+    ps1:          {m:'poly',   bg:'#2A2A3A', sk:'#C9A080', h:'#4A3A2A', c:'#5A5A7A', ac:'#8A6A4A', ln:'#1A1A24', fx:['grain']},
+    gameboy:      {m:'pixel',  bg:'#9BBC0F', sk:'#8BAC0F', h:'#306230', c:'#306230', ac:'#0F380F', ln:'#0F380F'},
+
+    cyberpunk:    {m:'glow',   bg:['#1A0A3A','#08040F'], sk:'#E8B8A0', h:'#2A1A4A', c:'#1A2A5A', ac:'#3DE8E8', ln:'#FF3FD0', lw:1.8, fx:['grid']},
+    steampunk:    {m:'plastic',bg:'#3A2A18', sk:'#E0B894', h:'#5A3A20', c:'#6A4A2A', ac:'#C9903A', ln:'#2A1C10', fx:['joint']},
+    samurai:      {m:'toon',   bg:'#B84A3A', sk:'#E8C4A0', h:'#1A1A1A', c:'#2A2A3A', ac:'#C9A45A', ln:'#141420', fx:['helm']},
+    ninja:        {m:'flat',   bg:'#141824', sk:'#3A3A4A', h:'#0A0A12', c:'#1A1A28', ac:'#8A2A2A', ln:'#000000', fx:['mask','vignette']},
+    viking:       {m:'paint',  bg:'#4A5A6A', sk:'#E0B894', h:'#C99A4A', c:'#6A4A3A', ac:'#A8A8B8', ln:'#2A2018', fx:['helm']},
+    medieval:     {m:'plastic',bg:'#5A6A7A', sk:'#E0B894', h:'#4A3A2A', c:'#A8B0BC', ac:'#9AA4B0', ln:'#2A3038', fx:['helm']},
+    elf:          {m:'paint',  bg:'#C9DCC0', sk:'#F5DCC0', h:'#D8C08A', c:'#7AA88A', ac:'#C9B85A', ln:'#5A6A50', fx:['ear']},
+    wizard:       {m:'paint',  bg:'#1A1A3A', sk:'#E8C4A0', h:'#D8D8D8', c:'#4A3A8A', ac:'#3DE8C9', ln:'#141428', fx:['hat','sparkle']},
+    mythology:    {m:'plastic',bg:'#2A2A3A', sk:'#E8D8C0', h:'#D8C05A', c:'#E8E4D8', ac:'#C9A45A', ln:'#3A3A48', fx:['sparkle']},
+    robot:        {m:'plastic',bg:'#C9D2DA', sk:'#B8C0CC', h:'#8A929C', c:'#5A6270', ac:'#3DC9E8', ln:'#3A4048', fx:['panel']},
+    mecha:        {m:'plastic',bg:'#3A4250', sk:'#8A929C', h:'#5A6270', c:'#3A424E', ac:'#E85A2A', ln:'#242A34', fx:['panel','helm']},
+    cyborg:       {m:'plastic',bg:'#1A2028', sk:'#D8B098', h:'#2A3038', c:'#8A929C', ac:'#3DE8C9', ln:'#141A20', fx:['panel']},
+    photoreal:    {m:'plastic',bg:'#2A3038', sk:'#E0B08A', h:'#3A2A1E', c:'#4A5058', ac:'#C9A080', ln:'#1A2028', fx:['vignette']},
+    cinematic:    {m:'plastic',bg:'#14202A', sk:'#E0A878', h:'#2A1E16', c:'#1A2A34', ac:'#3DA8C9', ln:'#0E161E', fx:['bars','vignette']}
+  },
+
+  gayaBenda: {
+    blueprint:    {m:'tech',   bg:'#0E3A6B', sk:'#0E3A6B', h:'#0E3A6B', c:'#0E3A6B', ac:'#EAF3FF', ln:'#EAF3FF', lw:1.8, fx:['grid']},
+    isometric:    {m:'flat',   bg:'#E4EAF2', sk:'#6F8FD8', h:'#5A78BC', c:'#3D5FA8', ac:'#F2C93D', ln:'#3A4A70', fx:['blocky']},
+    architecture: {m:'plastic',bg:'#DCE4EE', sk:'#C6CEDA', h:'#A8B2C0', c:'#8A94A4', ac:'#5A6470', ln:'#7A838F'},
+    interior:     {m:'flat',   bg:'#EFE4D4', sk:'#C9A882', h:'#8A6A4A', c:'#7A8A7A', ac:'#D8C4A0', ln:'#6A5442'},
+    scifiroom:    {m:'glow',   bg:['#16202E','#080C14'], sk:'#2A3644', h:'#1A2430', c:'#141C28', ac:'#4FD8EA', ln:'#4FD8EA', lw:1.6, fx:['panel']},
+    flat:         {m:'flat',   bg:'#F2F4F8', sk:'#4A8AD8', h:'#3A6AB8', c:'#F2A03C', ac:'#E8543C', ln:'#2A4A80'},
+    minimal:      {m:'flat',   bg:'#F4F2ED', sk:'#DCD8D0', h:'#C8C2B8', c:'#B4AEA2', ac:'#8A8478', ln:'#A8A296'},
+    glass:        {m:'plastic',bg:'#8FA8D8', sk:'#C4D8F0', h:'#A8C0E0', c:'#DCE8F8', ac:'#FFFFFF', ln:'#8AA0C0', fx:['shine']},
+    brutalist:    {m:'flat',   bg:'#8A8880', sk:'#B0AEA6', h:'#9A988E', c:'#7A7870', ac:'#6A6860', ln:'#5A5850', fx:['blocky','grain']},
+    bauhaus:      {m:'flat',   bg:'#EDE7DA', sk:'#D8392F', h:'#1A3A8A', c:'#F2C13D', ac:'#1A1A1A', ln:'#1A1A1A', fx:['blocky']},
+    artdeco:      {m:'flat',   bg:'#14202A', sk:'#C9A45A', h:'#E0C48A', c:'#1A2C3A', ac:'#E8D8A8', ln:'#0E1620'},
+    memphis:      {m:'flat',   bg:'#F5EDE0', sk:'#3DC9D8', h:'#F2C13D', c:'#E8548A', ac:'#3A3A5A', ln:'#2A2A3A'},
+
+    productshot:  {m:'plastic',bg:'#E7ECF3', sk:'#9FB4CC', h:'#7C92AB', c:'#FDFEFF', ac:'#C9A44C', ln:'#8A9AAE', fx:['shine']},
+    macro:        {m:'plastic',bg:'#2A2620', sk:'#C99A6A', h:'#8A6A48', c:'#E8C48A', ac:'#F0DCB0', ln:'#5A4630', fx:['vignette']},
+    fisheye:      {m:'plastic',bg:'#C9DCEF', sk:'#7AA8D8', h:'#5A88B8', c:'#F2E8D8', ac:'#E8543C', ln:'#3A5A80', fx:['vignette']},
+    droneview:    {m:'flat',   bg:'#6A8A5A', sk:'#B8A88A', h:'#8A7A5A', c:'#4A6A4A', ac:'#D8D0B8', ln:'#3A4A38'},
+    hdr:          {m:'plastic',bg:'#F0F4F8', sk:'#3D8AC9', h:'#F2A03C', c:'#E8543C', ac:'#2A2A2A', ln:'#1A1A1A'},
+    polaroid:     {m:'flat',   bg:'#EDE6D8', sk:'#C9A88A', h:'#A88A6A', c:'#8AA8A0', ac:'#D8B89A', ln:'#8A7A68', fx:['grain']},
+
+    marble:       {m:'plastic',bg:'#2A2A30', sk:'#F2F2F0', h:'#DCDCDA', c:'#E8E8E6', ac:'#FFFFFF', ln:'#BEBEBC'},
+    bronze:       {m:'plastic',bg:'#1E1A16', sk:'#8A6A3A', h:'#6A4E28', c:'#7A5E32', ac:'#D8B06A', ln:'#4A3620'},
+    ceramic:      {m:'plastic',bg:'#E8E2D6', sk:'#5A9AB8', h:'#48849E', c:'#F2EEE4', ac:'#FFFFFF', ln:'#3A6E86'},
+    porcelain:    {m:'plastic',bg:'#DEDAD2', sk:'#FAFAF8', h:'#EEEEEA', c:'#F4F4F0', ac:'#C8D4DC', ln:'#D0D0CA'},
+    crystal:      {m:'plastic',bg:'#1A2430', sk:'#B8E0F0', h:'#8AC4DC', c:'#DCF0F8', ac:'#FFFFFF', ln:'#7AAEC4', fx:['shine']},
+    diamond:      {m:'poly',   bg:'#12161E', sk:'#DCF0FA', h:'#A8D4E8', c:'#F0FAFF', ac:'#FFFFFF', ln:'#8AB8CC'},
+    gold:         {m:'plastic',bg:'#1E1A10', sk:'#E8C05A', h:'#C99A2E', c:'#D8AC42', ac:'#FFF0BC', ln:'#8A6A18', fx:['shine']},
+    chrome:       {m:'plastic',bg:'#20242A', sk:'#C8D0D8', h:'#98A2AC', c:'#E4EAF0', ac:'#FFFFFF', ln:'#7A848E', fx:['shine']},
+    rusted:       {m:'flat',   bg:'#2A241E', sk:'#8A4A2A', h:'#6A3A20', c:'#7A4426', ac:'#C97A4A', ln:'#4A2818', fx:['grain']},
+    copper:       {m:'plastic',bg:'#1E2420', sk:'#5AA88A', h:'#B8703A', c:'#4A9078', ac:'#D8A06A', ln:'#2E6A56'},
+    woodcarving:  {m:'plastic',bg:'#3A2A1A', sk:'#B5764A', h:'#8A5630', c:'#A06840', ac:'#D8A06A', ln:'#5A3A20', fx:['knit']},
+    icecarve:     {m:'plastic',bg:'#1A2A3A', sk:'#C4E4F0', h:'#9AC8DC', c:'#E0F2FA', ac:'#FFFFFF', ln:'#88B4C8', fx:['shine']},
+    glassart:     {m:'plastic',bg:'#182028', sk:'#7AC0C8', h:'#5A9AA4', c:'#B8E4E8', ac:'#FFFFFF', ln:'#4A868E', fx:['shine']},
+    holographic:  {m:'flat',   bg:['#2A1A4A','#0E1020'], sk:'#8AE8D8', h:'#FF7FD8', c:'#7F9AFF', ac:'#FFF07F', ln:'#3A2A5A', fx:['shine']},
+    iridescent:   {m:'plastic',bg:'#1A1828', sk:'#9A8AD8', h:'#6ABFD8', c:'#D88AC0', ac:'#F0E8FF', ln:'#4A3A6A'},
+
+    origami:      {m:'poly',   bg:'#F0EAE0', sk:'#E8DCC6', h:'#D3C2A4', c:'#F7F1E5', ac:'#C4B294', ln:'#B4A48A'},
+    papercut:     {m:'flat',   bg:'#EFE7DA', sk:'#E0D4BE', h:'#C9BAA0', c:'#F7F1E5', ac:'#A89880', ln:'#B0A28C', fx:['blocky']},
+    quilling:     {m:'flat',   bg:'#F2ECE2', sk:'#E8548A', h:'#3DC9D8', c:'#F2C13D', ac:'#7AB85A', ln:'#8A7A68'},
+    embroidery:   {m:'flat',   bg:'#E4DACA', sk:'#C94A6A', h:'#3A6A8A', c:'#D8A83D', ac:'#5A8A4A', ln:'#8A7458', fx:['stitch']},
+    mosaic:       {m:'pixel',  bg:'#2A2620', sk:'#D8A85A', h:'#8A4A3A', c:'#3A6A8A', ac:'#E8D8B8', ln:'#1A1814', fx:['cube']},
+    mandala:      {m:'tech',   bg:'#1A1428', sk:'#1A1428', h:'#1A1428', c:'#1A1428', ac:'#E8C45A', ln:'#E8C45A', lw:1.5},
+
+    movieposter:  {m:'plastic',bg:'#0E1620', sk:'#2A3A48', h:'#1A2632', c:'#F0862E', ac:'#F5E9D8', ln:'#080C12', fx:['bars','vignette']},
+    magazine:     {m:'flat',   bg:'#EDE6DA', sk:'#8FA6C0', h:'#6F87A5', c:'#B4472E', ac:'#1A1A1A', ln:'#8C8579'},
+    album:        {m:'flat',   bg:'#1A1A22', sk:'#E8543C', h:'#C43A28', c:'#F2E8D8', ac:'#F2C13D', ln:'#0E0E14'},
+    sticker:      {m:'toon',   bg:'#F5F0E4', sk:'#F2C13D', h:'#E8543C', c:'#3DC9D8', ac:'#FFFFFF', ln:'#1A1A1A', lw:4},
+    emblem:       {m:'plastic',bg:'#141C2A', sk:'#8A2A2A', h:'#C9A45A', c:'#E8D8A8', ac:'#D8B86A', ln:'#0E1420'},
+    logo:         {m:'flat',   bg:'#F4F5F7', sk:'#3B66FF', h:'#2A4ECC', c:'#7C94FF', ac:'#1A1A1A', ln:'#2A4ECC'},
+    appicon:      {m:'plastic',bg:'#E8ECF2', sk:'#3B66FF', h:'#2A4ECC', c:'#FFFFFF', ac:'#7C94FF', ln:'#2A4ECC'},
+    tradingcard:  {m:'toon',   bg:'#1E1A2A', sk:'#C9A45A', h:'#7A5A2A', c:'#3A2A5A', ac:'#E8D8A8', ln:'#0E0A18', lw:2.6},
+    mapillo:      {m:'flat',   bg:'#EADCBC', sk:'#8AA85A', h:'#6A8A44', c:'#5A88B8', ac:'#B4472E', ln:'#7A6A48'},
+
+    wireframe:    {m:'tech',   bg:'#0A0E16', sk:'#0A0E16', h:'#0A0E16', c:'#0A0E16', ac:'#7CE8B0', ln:'#7CE8B0', lw:1.5},
+    hud:          {m:'tech',   bg:'#050A12', sk:'#050A12', h:'#050A12', c:'#050A12', ac:'#4FD8EA', ln:'#4FD8EA', lw:1.6, fx:['grid','panel']},
+    neonui:       {m:'glow',   bg:['#1A0A2A','#080410'], sk:'#2A1A3A', h:'#1A1028', c:'#241638', ac:'#FF4FD8', ln:'#4FD8EA', lw:1.8},
+    terminal:     {m:'tech',   bg:'#020A04', sk:'#020A04', h:'#020A04', c:'#020A04', ac:'#3DE85A', ln:'#3DE85A', lw:1.4, fx:['grid']},
+    spaceship:    {m:'plastic',bg:'#0A0E1A', sk:'#9AA4B0', h:'#6A7480', c:'#4A5460', ac:'#4FD8EA', ln:'#2A3038', fx:['panel']},
+    timemachine:  {m:'plastic',bg:'#1A1024', sk:'#8A6A3A', h:'#C9A45A', c:'#3A2A4A', ac:'#B06FFF', ln:'#2A1A34', fx:['sparkle']},
+    steammachine: {m:'plastic',bg:'#241C14', sk:'#7A6A4A', h:'#5A4A30', c:'#6A5238', ac:'#C9903A', ln:'#3A2E1E', fx:['joint']}
+  }
+};
+
+/* ---------- Framing: diagram kamera terhadap subjek ---------- */
+const SA_FIG = '<circle cx="0" cy="-24" r="11"/><path d="M-17 34q17-36 34 0z"/>';
+
+function saFraming(p){
+  if(!p) return '';
+  const F = { x:20, y:8, w:200, h:94 };
+  let out = '<rect width="240" height="110" fill="#0C1220"/>' +
+    '<defs><clipPath id="safr' + saUid + '"><rect x="' + F.x + '" y="' + F.y + '" width="' + F.w + '" height="' + F.h + '" rx="3"/></clipPath></defs>' +
+    '<rect x="' + F.x + '" y="' + F.y + '" width="' + F.w + '" height="' + F.h + '" rx="3" fill="#18223E"/>' +
+    '<g clip-path="url(#safr' + saUid + ')">';
+
+  if(p.horizon){
+    out += '<rect x="20" y="66" width="200" height="36" fill="#22304F"/>' +
+           '<path d="M20 66h200" stroke="#3A4870" stroke-width="1.4"/>' +
+           '<g fill="#141C33"><rect x="34" y="48" width="16" height="18"/><rect x="58" y="40" width="12" height="26"/>' +
+           '<rect x="176" y="44" width="18" height="22"/></g>';
+  }
+  if(p.top){                                    // dilihat dari atas
+    out += '<ellipse cx="120" cy="62" rx="34" ry="20" fill="#5A6FD8"/>' +
+           '<circle cx="120" cy="52" r="15" fill="#7C94FF"/>';
+  }else{
+    const px = p.cx === undefined ? 120 : p.cx;
+    out += '<g transform="translate(' + px + ',' + p.cy + ') scale(' + p.s + ')' +
+           (p.tilt ? ' rotate(' + p.tilt + ')' : '') + '" fill="#7C94FF">' + SA_FIG + '</g>';
+    if(!p.back && p.s >= 2){                    // wajah cukup besar untuk terlihat
+      out += '<g fill="#2A2F52"><circle cx="' + (px - 12) + '" cy="' + (p.cy - 24 * p.s - 4) + '" r="3.4"/>' +
+             '<circle cx="' + (px + 12) + '" cy="' + (p.cy - 24 * p.s - 4) + '" r="3.4"/></g>';
+    }
+  }
+  if(p.two){
+    out += '<g transform="translate(160,58) scale(1.1)" fill="#4FD8EA">' + SA_FIG + '</g>';
+  }
+  if(p.ots){
+    out += '<path d="M20 102q34-52 74-16v16z" fill="#0A1020"/>' +
+           '<circle cx="44" cy="72" r="20" fill="#0A1020"/>';
+  }
+  out += '</g>';
+
+  if(p.guide === 'thirds'){
+    out += '<g stroke="#FFB84D" stroke-width="1.1" stroke-dasharray="5 5" opacity=".85">' +
+           '<path d="M86.7 8v94M153.3 8v94M20 39.3h200M20 70.7h200"/></g>';
+  }else if(p.guide === 'center'){
+    out += '<path d="M120 8v94" stroke="#FFB84D" stroke-width="1.1" stroke-dasharray="5 5" opacity=".85"/>';
+  }else if(p.guide === 'lines'){
+    out += '<g stroke="#4FD8EA" stroke-width="1.4" opacity=".8"><path d="M20 102L112 60M220 102L128 60"/></g>';
+  }else if(p.guide === 'inner'){
+    out += '<rect x="76" y="20" width="88" height="72" rx="2" fill="none" stroke="#FFB84D" stroke-width="2.4" opacity=".9"/>';
+  }else if(p.guide === 'space'){
+    out += '<path d="M32 20h74M32 20v6M106 20v6" stroke="#FFB84D" stroke-width="1.2" opacity=".8"/>';
+  }
+
+  if(p.cam){
+    const pos = { low:[120, 104], high:[120, 4], eye:[212, 55], bottom:[120, 106], top:[120, 3], air:[206, 14] }[p.cam] || [212, 55];
+    out += '<g fill="#FFB84D"><rect x="' + (pos[0] - 8) + '" y="' + (pos[1] - 5) + '" width="16" height="10" rx="2"/></g>' +
+           '<path d="M' + pos[0] + ' ' + pos[1] + 'L120 55" stroke="#FFB84D" stroke-width="1.2" stroke-dasharray="4 4" opacity=".75"/>';
+  }
+  return out;
+}
+
+const FRAMING_ART = {
+  ecu:        {s:7.4, cy:300},
+  cu:         {s:3.6, cy:150},
+  ms:         {s:2.1, cy:96},
+  full:       {s:1.25, cy:55},
+  wide:       {s:0.5, cy:66, horizon:true},
+  establishing:{s:0.32, cy:70, horizon:true},
+
+  eyelevel:   {s:1.2, cy:55, cam:'eye'},
+  low:        {s:1.35, cy:62, cam:'low'},
+  high:       {s:0.95, cy:50, cam:'high'},
+  birds:      {top:true, cam:'top'},
+  worms:      {s:1.6, cy:70, cam:'bottom'},
+  dutch:      {s:1.2, cy:55, tilt:-14},
+  aerial:     {s:0.55, cy:70, horizon:true, cam:'air'},
+
+  thirds:     {s:1.1, cy:56, cx:87, guide:'thirds'},
+  centered:   {s:1.15, cy:55, guide:'center'},
+  framewithin:{s:0.95, cy:58, guide:'inner'},
+  leading:    {s:1.0, cy:56, guide:'lines'},
+  negspace:   {s:0.55, cy:74, cx:180, guide:'space'},
+  ots:        {s:0.9, cy:58, cx:150, ots:true},
+  pov:        {s:0.62, cy:70, cx:150, horizon:true},
+  two:        {s:1.1, cy:58, cx:82, two:true},
+  profile:    {s:1.2, cy:55, cx:132, tilt:0, back:true},
+  behind:     {s:1.2, cy:55, back:true}
+};
+
+/* ---------- Pencahayaan: bola/kepala yang disinari dari arah tertentu ---------- */
+function saLight(p){
+  if(!p) return '';
+  const rad = p.ang * Math.PI / 180;
+  const gx = Math.round(50 + 36 * Math.cos(rad));
+  const gy = Math.round(50 - 36 * Math.sin(rad));
+  const soft = p.soft === undefined ? .5 : p.soft;
+  let out = Array.isArray(p.bg)
+    ? '<defs><linearGradient id="salbg' + saUid + '" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + p.bg[0] +
+      '"/><stop offset="1" stop-color="' + p.bg[1] + '"/></linearGradient></defs><rect width="240" height="110" fill="url(#salbg' + saUid + ')"/>'
+    : '<rect width="240" height="110" fill="' + p.bg + '"/>';
+
+  if(p.type === 'rays'){
+    out += '<g opacity=".5"><path d="M60 0L18 110h26L96 0z" fill="' + p.col + '"/>' +
+           '<path d="M110 0L74 110h18L142 0z" fill="' + p.col + '" opacity=".7"/></g>';
+  }
+  if(p.type === 'spot'){
+    out += '<path d="M104 0h32l54 110H50z" fill="' + p.col + '" opacity=".28"/>';
+  }
+  if(p.glowBg){
+    out += '<circle cx="' + (120 + 60 * Math.cos(rad)) + '" cy="' + (55 - 40 * Math.sin(rad)) +
+           '" r="30" fill="' + p.col + '" opacity=".35"/>';
+  }
+
+  out += '<ellipse cx="120" cy="96" rx="40" ry="7" fill="#000000" opacity="' + (0.2 + 0.5 * (1 - (p.amb || .2))) + '"/>';
+
+  if(p.type === 'silhouette'){
+    out += '<circle cx="120" cy="52" r="32" fill="#05070C"/>' +
+           '<path d="M120 20a32 32 0 0 1 0 64" fill="none" stroke="' + p.col + '" stroke-width="2.4" opacity=".9"/>';
+  }else if(p.type === 'rim'){
+    out += '<circle cx="120" cy="52" r="32" fill="' + saShade(p.base || '#3A3A44', -.35) + '"/>' +
+           '<path d="M120 20a32 32 0 0 1 0 64" fill="none" stroke="' + p.col + '" stroke-width="3.4"/>';
+  }else{
+    out += '<defs><radialGradient id="sal' + saUid + '" cx="' + gx + '%" cy="' + gy + '%" r="' + Math.round(60 + soft * 45) + '%">' +
+           '<stop offset="0" stop-color="' + p.col + '"/>' +
+           '<stop offset="' + (0.35 + soft * 0.3) + '" stop-color="' + saShade(p.base || '#8A6A50', -.1) + '"/>' +
+           '<stop offset="1" stop-color="' + saShade(p.base || '#8A6A50', -(0.9 - (p.amb || .2))) + '"/>' +
+           '</radialGradient></defs>' +
+           '<circle cx="120" cy="52" r="32" fill="url(#sal' + saUid + ')"/>';
+  }
+
+  if(p.fx === 'blinds'){
+    out += '<g fill="#000" opacity=".5"><rect x="0" y="18" width="240" height="6"/><rect x="0" y="34" width="240" height="6"/>' +
+           '<rect x="0" y="50" width="240" height="6"/><rect x="0" y="66" width="240" height="6"/></g>';
+  }
+  if(p.fx === 'flame'){
+    out += '<rect x="171" y="62" width="10" height="30" rx="2" fill="#D6C9B2"/>' +
+           '<path d="M176 46q8 9 0 15q-8-6 0-15z" fill="#FFD08A"/>';
+  }
+  if(p.fx === 'screen'){
+    out += '<rect x="160" y="34" width="44" height="32" rx="3" fill="#0E2A38" stroke="' + p.col + '" stroke-width="1.6"/>' +
+           '<g fill="' + p.col + '" opacity=".8"><rect x="166" y="42" width="22" height="3"/><rect x="166" y="50" width="14" height="3"/></g>';
+  }
+  if(p.fx === 'ring'){
+    out += '<circle cx="120" cy="52" r="46" fill="none" stroke="' + p.col + '" stroke-width="5" opacity=".55"/>';
+  }
+  if(p.fx === 'bolt'){
+    out += '<path d="M150 4l-16 40h14l-12 34 34-46h-16l14-28z" fill="#FFFFFF" opacity=".9"/>';
+  }
+  if(p.fx === 'vignette'){
+    out += '<defs><radialGradient id="salv' + saUid + '" cx="50%" cy="48%" r="70%"><stop offset=".5" stop-color="#000" stop-opacity="0"/>' +
+           '<stop offset="1" stop-color="#000" stop-opacity=".75"/></radialGradient></defs><rect width="240" height="110" fill="url(#salv' + saUid + ')"/>';
+  }
+  return out;
+}
+
+const LIGHT_ART = {
+  golden:     {ang:200, col:'#FFC078', base:'#D8A070', bg:['#F0A860','#5A3A2A'], amb:.35, soft:.6},
+  bluehour:   {ang:120, col:'#9FC4FF', base:'#5A6E96', bg:['#2A3E6E','#101A34'], amb:.3, soft:.7},
+  midday:     {ang:90,  col:'#FFFFFF', base:'#C9A888', bg:['#8FC4F0','#BFDCF5'], amb:.35, soft:.12},
+  overcast:   {ang:90,  col:'#E4EAF0', base:'#B0B6BE', bg:'#C4CCD6', amb:.6, soft:1},
+  moonlight:  {ang:110, col:'#CFE0FF', base:'#4A5468', bg:['#141C34','#080C18'], amb:.14, soft:.5},
+  godrays:    {ang:120, col:'#FFE8B0', base:'#8A7A5A', bg:['#2A2A1E','#12120C'], amb:.2, soft:.7, type:'rays'},
+  aurora:     {ang:120, col:'#7CF0C0', base:'#4A6A70', bg:['#123048','#08121E'], amb:.2, soft:.7, glowBg:true},
+
+  soft:       {ang:70,  col:'#FFFFFF', base:'#D8C0AC', bg:'#EAEEF3', amb:.6, soft:1},
+  ring:       {ang:90,  col:'#FFFFFF', base:'#E8CDB4', bg:'#22262E', amb:.5, soft:.9, fx:'ring'},
+  rembrandt:  {ang:145, col:'#FFE0B8', base:'#B08A66', bg:'#1A1620', amb:.14, soft:.3},
+  rim:        {ang:20,  col:'#FFD9A8', base:'#3A3A44', bg:'#0A0C12', amb:.08, type:'rim'},
+  backlit:    {ang:90,  col:'#FFF0C8', base:'#101010', bg:['#FFE9A8','#8A6A3A'], amb:.05, type:'silhouette'},
+  dramatic:   {ang:160, col:'#FFF0D8', base:'#9A7A5A', bg:'#08080C', amb:.05, soft:.16},
+  chiaroscuro:{ang:150, col:'#FFF6E0', base:'#8A6A48', bg:'#050508', amb:.02, soft:.1, fx:'vignette'},
+  spotlight:  {ang:90,  col:'#FFFFFF', base:'#C0A488', bg:'#06060A', amb:.06, soft:.25, type:'spot'},
+
+  candle:     {ang:250, col:'#FFB05E', base:'#7A5030', bg:'#0A0806', amb:.08, soft:.45, fx:'flame'},
+  neon:       {ang:200, col:'#FF5FD0', base:'#5A4A78', bg:['#1A0A2E','#07040E'], amb:.16, soft:.5, glowBg:true},
+  campfire:   {ang:270, col:'#FF9440', base:'#8A5030', bg:'#0E0A08', amb:.1, soft:.4},
+  lightning:  {ang:60,  col:'#FFFFFF', base:'#8A94A8', bg:['#1A2436','#080C14'], amb:.12, soft:.05, fx:'bolt'},
+  fluorescent:{ang:95,  col:'#DFF5D8', base:'#9AB09A', bg:'#20281F', amb:.4, soft:.85},
+  practical:  {ang:210, col:'#FFCE8A', base:'#A08462', bg:'#141018', amb:.2, soft:.55, glowBg:true},
+  screen:     {ang:15,  col:'#7CC4FF', base:'#48566A', bg:'#06080E', amb:.08, soft:.5, fx:'screen'},
+  biolum:     {ang:270, col:'#6CF0C8', base:'#20404A', bg:['#0A1E24','#040A0E'], amb:.1, soft:.6}
+};
+
+/* ---------- Mood: atmosfer, palet, dan siluet ---------- */
+function saMood(p){
+  if(!p) return '';
+  let out = '<defs><linearGradient id="samd' + saUid + '" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="' + p.bg[0] + '"/><stop offset="1" stop-color="' + p.bg[1] + '"/></linearGradient></defs>' +
+    '<rect width="240" height="110" fill="url(#samd' + saUid + ')"/>';
+
+  if(p.sun) out += '<circle cx="188" cy="28" r="15" fill="' + p.ac + '" opacity=".85"/>' +
+                   '<circle cx="188" cy="28" r="24" fill="' + p.ac + '" opacity=".25"/>';
+  if(p.land === 'soft'){
+    out += '<path d="M0 74q46-20 92-6t148-8v50H0z" fill="' + p.gr + '"/>';
+  }else if(p.land === 'jag'){
+    out += '<path d="M0 110L46 44l30 34 34-52 40 60 38-40 52 64z" fill="' + p.gr + '"/>';
+  }else if(p.land === 'flat'){
+    out += '<rect x="0" y="82" width="240" height="28" fill="' + p.gr + '"/>';
+  }
+  if(p.mono) out += '<rect x="88" y="14" width="64" height="82" rx="3" fill="' + p.gr + '" opacity=".55"/>';
+
+  const fs = p.fs || 1;
+  out += '<g transform="translate(' + (p.fx2 || 120) + ',' + (p.fy || 66) + ') scale(' + fs + ')" fill="' + p.fig + '">' + SA_FIG + '</g>';
+
+  if(p.fog) out += '<rect width="240" height="110" fill="' + p.fog + '" opacity=".3"/>';
+  if(p.spark) out += '<g fill="#FFFFFF" opacity=".7"><circle cx="40" cy="24" r="2"/><circle cx="72" cy="14" r="1.5"/>' +
+                     '<circle cx="204" cy="70" r="1.8"/><circle cx="26" cy="62" r="1.4"/></g>';
+  if(p.vig) out += '<defs><radialGradient id="samv' + saUid + '" cx="50%" cy="50%" r="70%"><stop offset=".5" stop-color="#000" stop-opacity="0"/>' +
+                   '<stop offset="1" stop-color="#000" stop-opacity=".7"/></radialGradient></defs><rect width="240" height="110" fill="url(#samv' + saUid + ')"/>';
+  return out;
+}
+
+const MOOD_ART = {
+  serene:     {bg:['#BFE0EA','#E8F2F0'], gr:'#8FC0B0', ac:'#FFF6D0', fig:'#4A7A78', land:'soft', sun:true, fs:.9},
+  cozy:       {bg:['#F5C98A','#C97A4A'], gr:'#9A5A38', ac:'#FFF0C0', fig:'#4A2A1A', land:'soft', sun:true, fs:.95},
+  nostalgic:  {bg:['#D8C4A0','#A88A6A'], gr:'#8A6A4A', ac:'#F5E4C0', fig:'#4A3A2A', land:'soft', sun:true, fs:.9, fog:'#D8C4A0'},
+  romantic:   {bg:['#F5A8C0','#8A4A6A'], gr:'#6A3A50', ac:'#FFE0EC', fig:'#2A1420', land:'soft', fs:.9, spark:true},
+  playful:    {bg:['#FFE066','#FF9F5A'], gr:'#5ACF8A', ac:'#FFFFFF', fig:'#3A6AD8', land:'soft', sun:true, fs:1},
+  whimsical:  {bg:['#CFB0F0','#8AC4E8'], gr:'#7AB89A', ac:'#FFF4C0', fig:'#4A3A7A', land:'soft', fs:.85, spark:true},
+  dreamy:     {bg:['#D8C4F0','#F0C4D8'], gr:'#C0A8DC', ac:'#FFFFFF', fig:'#7A6A9A', land:'soft', fs:.9, fog:'#E8D8F0'},
+
+  tense:      {bg:['#2A3038','#101418'], gr:'#1A1E24', ac:'#8A9098', fig:'#0A0C10', land:'jag', fs:.85, vig:true},
+  mysterious: {bg:['#1E2A3A','#0A1018'], gr:'#141C28', ac:'#5A7A9A', fig:'#080C14', land:'soft', fs:.8, fog:'#1E2A3A', vig:true},
+  horror:     {bg:['#2A1414','#0A0606'], gr:'#180A0A', ac:'#8A2A2A', fig:'#000000', land:'jag', fs:.9, vig:true},
+  melancholy: {bg:['#5A6A7A','#2A3440'], gr:'#3A4450', ac:'#A0AEBC', fig:'#1A2028', land:'flat', fs:.85, fog:'#5A6A7A'},
+  lonely:     {bg:['#8A9AAA','#C0CCD8'], gr:'#A8B4C0', ac:'#FFFFFF', fig:'#3A4450', land:'flat', fs:.42, fx2:186},
+  apocalyptic:{bg:['#8A6A4A','#3A2A1E'], gr:'#4A3628', ac:'#C99A5A', fig:'#1A120C', land:'jag', fs:.8, fog:'#8A6A4A', vig:true},
+  aggressive: {bg:['#C93A2A','#4A0E08'], gr:'#6A1A10', ac:'#FFD23D', fig:'#140404', land:'jag', fs:1.1},
+
+  epic:       {bg:['#3A4E7A','#0E1424'], gr:'#1A2440', ac:'#FFD9A0', fig:'#080C18', land:'jag', fs:.34, sun:true},
+  heroic:     {bg:['#F0B45A','#8A4A2A'], gr:'#5A3020', ac:'#FFF0C0', fig:'#1A0E08', land:'flat', fs:1.25, sun:true},
+  futuristic: {bg:['#16283A','#060A12'], gr:'#0E1A28', ac:'#4FD8EA', fig:'#0A1420', land:'flat', fs:.95, mono:true},
+  clinical:   {bg:['#E8EEF2','#C8D4DC'], gr:'#B8C4CC', ac:'#FFFFFF', fig:'#7A8A94', land:'flat', fs:.9, mono:true},
+  sacred:     {bg:['#F0E0B0','#6A5A3A'], gr:'#4A4028', ac:'#FFFAE0', fig:'#241E12', land:'flat', fs:.85, sun:true, mono:true},
+  triumphant: {bg:['#FFD060','#D8642A'], gr:'#8A3A18', ac:'#FFFFFF', fig:'#2A1206', land:'jag', fs:1.15, sun:true, spark:true}
+};
+
+/* ---------- Detail teknis: swatch tekstur, palet, atau efek lensa ---------- */
+function saDetail(p){
+  if(!p) return '';
+  if(p.kind === 'pal'){
+    let out = '<rect width="240" height="110" fill="#12141C"/>';
+    const n = p.cols.length, w = 216 / n;
+    p.cols.forEach(function(c, i){
+      out += '<rect x="' + (12 + i * w) + '" y="18" width="' + (w - 4) + '" height="74" rx="4" fill="' + c + '"/>';
+    });
+    return out;
+  }
+  if(p.kind === 'lens'){
+    let out = '<rect width="240" height="110" fill="' + (p.bg || '#0C1018') + '"/>';
+    if(p.blur){
+      out += '<defs><filter id="sadb' + saUid + '"><feGaussianBlur stdDeviation="' + p.blur + '"/></filter></defs>' +
+             '<g filter="url(#sadb' + saUid + ')"><circle cx="176" cy="34" r="18" fill="#3B66FF" opacity=".8"/>' +
+             '<circle cx="208" cy="68" r="13" fill="#7C94FF" opacity=".7"/>' +
+             '<circle cx="152" cy="76" r="11" fill="#4FD8EA" opacity=".7"/></g>';
+    }
+    if(p.sharp){
+      const fg = p.fg || '#EAF0FF';
+      out += '<circle cx="76" cy="55" r="28" fill="none" stroke="' + fg + '" stroke-width="2.6"/>' +
+             '<circle cx="76" cy="55" r="13" fill="none" stroke="' + fg + '" stroke-width="2"/>' +
+             '<circle cx="76" cy="55" r="4" fill="' + fg + '"/>' +
+             '<path d="M76 19v9M76 82v9M40 55h9M103 55h9" stroke="' + fg + '" stroke-width="2" stroke-linecap="round"/>';
+    }
+    if(p.band){
+      out += '<rect x="0" y="42" width="240" height="26" fill="#EAF0FF" opacity=".12"/>' +
+             '<g fill="#7C94FF"><circle cx="60" cy="55" r="9"/><circle cx="120" cy="55" r="9"/><circle cx="180" cy="55" r="9"/></g>';
+    }
+    if(p.trail){
+      out += '<g stroke="#FFD9A8" stroke-width="2.4" opacity=".8" fill="none" stroke-linecap="round">' +
+             '<path d="M20 78q60-40 200-16"/><path d="M20 90q60-34 200-10"/></g>';
+    }
+    if(p.streak){
+      out += '<path d="M16 100L216 12" stroke="#FFD9A8" stroke-width="3" opacity=".55"/>' +
+             '<circle cx="176" cy="34" r="16" fill="#FFD9A8" opacity=".3"/>' +
+             '<circle cx="120" cy="58" r="9" fill="#FFD9A8" opacity=".22"/>';
+    }
+    if(p.motion){
+      out += '<g fill="#7C94FF"><rect x="60" y="42" width="120" height="26" rx="13" opacity=".25"/>' +
+             '<rect x="92" y="42" width="96" height="26" rx="13" opacity=".45"/>' +
+             '<rect x="128" y="42" width="60" height="26" rx="13"/></g>';
+    }
+    if(p.fringe){
+      out += '<g opacity=".85"><circle cx="116" cy="55" r="26" fill="#FF3A6A" opacity=".55"/>' +
+             '<circle cx="124" cy="55" r="26" fill="#3AD8FF" opacity=".55"/>' +
+             '<circle cx="120" cy="55" r="26" fill="#EAF0FF" opacity=".65"/></g>';
+    }
+    if(p.grain){
+      out += '<defs><filter id="sadg' + saUid + '"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2"/>' +
+             '<feColorMatrix type="saturate" values="0"/></filter></defs>' +
+             '<circle cx="120" cy="55" r="32" fill="#8A929C"/>' +
+             '<rect width="240" height="110" filter="url(#sadg' + saUid + ')" opacity=".3"/>';
+    }
+    return out;
+  }
+  /* tekstur */
+  let out = '<rect width="240" height="110" fill="' + (p.bg || '#12141C') + '"/>';
+  out += '<defs><radialGradient id="sadt' + saUid + '" cx="34%" cy="28%" r="76%">' +
+         '<stop offset="0" stop-color="' + saShade(p.col, p.gloss === undefined ? .25 : p.gloss) + '"/>' +
+         '<stop offset="1" stop-color="' + saShade(p.col, -.35) + '"/></radialGradient></defs>' +
+         '<rect x="26" y="16" width="188" height="78" rx="10" fill="url(#sadt' + saUid + ')"/>';
+  if(p.pat === 'dots'){
+    out += '<g fill="' + saShade(p.col, -.45) + '" opacity=".85"><circle cx="60" cy="38" r="5"/><circle cx="106" cy="62" r="6.5"/>' +
+           '<circle cx="152" cy="34" r="4.5"/><circle cx="182" cy="70" r="5.5"/><circle cx="80" cy="76" r="3.6"/></g>';
+  }else if(p.pat === 'grain'){
+    out += '<g stroke="' + saShade(p.col, -.4) + '" stroke-width="1.8" opacity=".8" fill="none">' +
+           '<path d="M26 32q94-10 188 0M26 50q94 12 188 0M26 68q94-8 188 0M26 84q94 10 188 0"/></g>';
+  }else if(p.pat === 'weave'){
+    out += '<g stroke="' + saShade(p.col, -.3) + '" stroke-width="1.4" opacity=".9">' +
+           '<path d="M44 16v78M62 16v78M80 16v78M98 16v78M116 16v78M134 16v78M152 16v78M170 16v78M188 16v78' +
+           'M26 32h188M26 48h188M26 64h188M26 80h188"/></g>';
+  }else if(p.pat === 'crack'){
+    out += '<g stroke="' + saShade(p.col, -.5) + '" stroke-width="1.4" opacity=".8" fill="none">' +
+           '<path d="M56 24l18 24-12 20 20 22M140 20l-14 26 22 18-10 26M96 30l40 14"/></g>';
+  }else if(p.pat === 'drop'){
+    out += '<g fill="#FFFFFF" opacity=".55"><ellipse cx="72" cy="40" rx="4" ry="6"/><ellipse cx="110" cy="66" rx="3" ry="5"/>' +
+           '<ellipse cx="158" cy="36" rx="3.4" ry="5.4"/><ellipse cx="186" cy="72" rx="2.6" ry="4.4"/></g>';
+  }else if(p.pat === 'caustic'){
+    out += '<g stroke="#FFFFFF" stroke-width="2" opacity=".5" fill="none">' +
+           '<path d="M50 76q26-30 52 0t52-16"/><path d="M64 86q30-22 60 2t62-14"/></g>';
+  }
+  if(p.shine) out += '<path d="M52 94L112 16h20L72 94z" fill="#FFFFFF" opacity=".3"/>';
+  return out;
+}
+
+const DETAIL_ART = {
+  rusty:       {col:'#8A4A2A', bg:'#241C16', pat:'dots', gloss:.05},
+  glossy:      {col:'#4A7AD8', bg:'#141824', gloss:.6, shine:true},
+  oldmetal:    {col:'#8A9098', bg:'#16181E', gloss:.35, pat:'crack'},
+  wood:        {col:'#A5703F', bg:'#241A12', pat:'grain', gloss:.2},
+  glassmat:    {col:'#7AC0D8', bg:'#0E1620', gloss:.5, pat:'caustic', shine:true},
+  fabric:      {col:'#4A6A9A', bg:'#12161E', pat:'weave', gloss:.1},
+  leather:     {col:'#6A4028', bg:'#1A120C', pat:'crack', gloss:.3, shine:true},
+  wet:         {col:'#C08A62', bg:'#12100E', gloss:.55, pat:'drop', shine:true},
+
+  mono:        {kind:'pal', cols:['#F2F4F8','#B0B4BA','#6A6E74','#2A2C30','#0E0F12']},
+  warm:        {kind:'pal', cols:['#FFE0A8','#F2A03C','#E2542E','#A8281A']},
+  cool:        {kind:'pal', cols:['#CFE8F5','#7FC4E0','#3E86B8','#1B3E63']},
+  complementary:{kind:'pal', cols:['#F2A03C','#FFD9A8','#2A6E8A','#0E3A50']},
+  muted:       {kind:'pal', cols:['#E0D8C8','#B8AE9A','#8A8474','#5A564C']},
+  neonpal:     {kind:'pal', cols:['#FF3FD0','#4FD8EA','#5AE88A','#FFD84F']},
+
+  ultradetail: {kind:'lens', sharp:true, bg:'#0C1018'},
+  minimalclean:{kind:'lens', sharp:true, bg:'#EEF1F5', fg:'#7A848F'},
+  eightk:      {kind:'lens', sharp:true, band:true, bg:'#0A0E16'},
+  dof:         {kind:'lens', sharp:true, blur:5},
+  tiltshift:   {kind:'lens', blur:4.5, band:true},
+  motionblur:  {kind:'lens', motion:true},
+  longexposure:{kind:'lens', trail:true, bg:'#0A1018'},
+  grain:       {kind:'lens', grain:true, bg:'#14161C'},
+  chromatic:   {kind:'lens', fringe:true},
+  flare:       {kind:'lens', streak:true, sharp:true}
+};
+
+/* ---------- pemilih ---------- */
+function saArtFor(catKey, id){
+  saUid++;
+  if(catKey === 'gayaHidup') return saRender((STYLE_ART.gayaHidup || {})[id], 'bust');
+  if(catKey === 'gayaBenda') return saRender((STYLE_ART.gayaBenda || {})[id], 'object');
+  if(catKey === 'framing')   return saFraming(FRAMING_ART[id]);
+  if(catKey === 'lighting')  return saLight(LIGHT_ART[id]);
+  if(catKey === 'mood')      return saMood(MOOD_ART[id]);
+  if(catKey === 'detail')    return saDetail(DETAIL_ART[id]);
+  return '';
+}
 
 /* =========================================================================
    SUMBER TUNGGAL DAFTAR FIELD
@@ -1859,14 +2366,14 @@ function showOptInfo(catKey, optEl){
   if(!item){ hideOptInfo(); return; }
   const desc = (OPTION_INFO[catKey] || {})[item[0]] || '';
   const grup = optEl.dataset.group || '';
-  const art = GROUP_ART[grup] || '';
+  const art = saArtFor(catKey, item[0]);
   const frasa = state.lang === 'en' ? item[3] : item[2];
   const ex = previewPromptWith(catKey, item[0]);
   const teks = ex.teks.length > 240 ? ex.teks.slice(0, 240).trim() + '…' : ex.teks;
 
   optPop.innerHTML =
-    (art ? '<svg class="op-art" viewBox="0 0 240 110" role="img" aria-label="Ilustrasi kelompok ' +
-           esc(grup) + '">' + art + '</svg>' : '') +
+    (art ? '<svg class="op-art" viewBox="0 0 240 110" role="img" aria-label="Ilustrasi gaya ' +
+           esc(item[1]) + '">' + art + '</svg>' : '') +
     '<div class="op-grup">' + esc(grup) + '</div>' +
     '<h5>' + esc(item[1]) + '</h5>' +
     (desc ? '<p class="op-desc">' + esc(desc) + '</p>' : '') +
@@ -1892,7 +2399,9 @@ function positionOptInfo(optEl){
     optPop.style.width = (vw - 2 * PAD) + 'px';
     optPop.style.maxHeight = Math.round(vh * 0.42) + 'px';
     optPop.style.left = PAD + 'px';
-    optPop.style.top = (vh - optPop.offsetHeight - PAD) + 'px';
+    // bilah "Prompt Kamu" selalu menempel 56px di bawah layar kecil,
+    // jadi kotak info ditaruh di atasnya supaya tidak tertutup.
+    optPop.style.top = (vh - optPop.offsetHeight - PAD - 56) + 'px';
     return;
   }
 
