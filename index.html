@@ -4,7 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wahana Lab — Prompt Builder</title>
+<meta name="description" content="Susun prompt AI image generator secara terstruktur: subjek, gaya visual, framing, pencahayaan, mood, dan detail teknis. Output bahasa Indonesia atau Inggris, siap pakai di ChatGPT, Midjourney, dan Stable Diffusion.">
+<meta name="theme-color" content="#0A1128">
+<meta property="og:title" content="Wahana Lab — Prompt Builder">
+<meta property="og:description" content="Susun prompt AI image generator, bukan tebak-tebakan.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230A1128'/%3E%3Cpath d='M6 10l3.4 12L12.8 13l3.4 9L19.6 10' stroke='%233B66FF' stroke-width='2.4' fill='none' stroke-linejoin='round' stroke-linecap='round'/%3E%3Ccircle cx='25' cy='11.5' r='2.6' fill='%234FD8EA'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root{
@@ -16,16 +23,25 @@
     --blue-soft: #7C94FF;
     --ice: #F4F7FC;
     --ice-dim: #A9B4D6;
+    --muted: #5A648C;
 
-    --c1: #4FD8EA;
-    --c2: #A78BFA;
-    --c3: #FFB84D;
-    --c4: #FF8A65;
-    --c5: #4ADE80;
-    --c6: #94A3B8;
+    /* Warna elemen + versi tint-nya.
+       Tint ditulis eksplisit sebagai rgba. JANGAN pakai var(--c1) + "22":
+       substitusi custom property bersifat token, bukan teks, jadi "var(--c1)22"
+       menjadi "#4FD8EA 22" (invalid) dan deklarasinya dibuang browser. */
+    --c1: #4FD8EA; --c1-dim: rgba(79,216,234,.14);
+    --c2: #A78BFA; --c2-dim: rgba(167,139,250,.14);
+    --c3: #FFB84D; --c3-dim: rgba(255,184,77,.14);
+    --c4: #FF8A65; --c4-dim: rgba(255,138,101,.14);
+    --c5: #4ADE80; --c5-dim: rgba(74,222,128,.14);
+    --c6: #94A3B8; --c6-dim: rgba(148,163,184,.14);
+    --c7: #F472B6; --c7-dim: rgba(244,114,182,.14);
   }
 
   *{box-sizing:border-box;}
+  /* Aturan penulis dengan display: menang atas [hidden] bawaan browser,
+     jadi tegaskan di sini supaya toggle .hidden selalu bisa diandalkan. */
+  [hidden]{ display:none !important; }
   html,body{margin:0;padding:0;}
   body{
     background: radial-gradient(1200px 600px at 85% -10%, #16224e 0%, var(--navy) 55%), var(--navy);
@@ -37,63 +53,29 @@
 
   .wrap{ max-width: 1160px; margin: 0 auto; }
 
-  header{
-    display:flex;
-    align-items:center;
-    gap:16px;
-    margin-bottom: 8px;
-  }
+  header{ display:flex; align-items:center; gap:16px; margin-bottom: 8px; }
   .logo{
-    width:56px; height:56px;
-    border-radius: 12px;
-    object-fit: contain;
-    background:#000;
-    flex-shrink:0;
-    border: 1px solid var(--line);
+    width:56px; height:56px; border-radius:12px;
+    background:#000; flex-shrink:0; border:1px solid var(--line); display:block;
   }
   header h1{
-    font-family:'Space Grotesk';
-    font-weight:600;
-    font-size: 22px;
-    margin:0;
-    letter-spacing:-0.01em;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:22px;
+    margin:0; letter-spacing:-0.01em;
   }
-  header p{
-    margin:2px 0 0;
-    color: var(--ice-dim);
-    font-size: 13px;
-  }
+  header p{ margin:2px 0 0; color:var(--ice-dim); font-size:13px; }
 
-  .intro{
-    margin: 28px 0 36px;
-    max-width: 640px;
-  }
+  .intro{ margin: 28px 0 24px; max-width: 640px; }
   .intro h2{
-    font-family:'Space Grotesk';
+    font-family:'Space Grotesk', sans-serif;
     font-size: clamp(28px, 4vw, 38px);
-    line-height:1.15;
-    margin:0 0 12px;
-    font-weight:600;
-    letter-spacing:-0.02em;
+    line-height:1.15; margin:0 0 12px; font-weight:600; letter-spacing:-0.02em;
   }
-  .intro p{
-    color: var(--ice-dim);
-    font-size:15px;
-    line-height:1.6;
-    margin:0;
-  }
+  .intro p{ color:var(--ice-dim); font-size:15px; line-height:1.6; margin:0; }
 
-  .grid{
-    display:grid;
-    grid-template-columns: 1.05fr 0.95fr;
-    gap: 28px;
-    align-items:start;
-  }
-  @media (max-width: 880px){
-    .grid{ grid-template-columns: 1fr; }
-  }
-
-  .controls{ display:flex; flex-direction:column; gap:14px; }
+  .grid{ display:grid; grid-template-columns: 1.05fr 0.95fr; gap:28px; align-items:start; }
+  /* min-width:0 wajib: default grid item min-width:auto membuat konten panjang
+     (mis. teks riwayat) melebarkan track dan bikin halaman scroll horizontal. */
+  .controls{ display:flex; flex-direction:column; gap:14px; min-width:0; }
 
   .card{
     background: var(--panel);
@@ -102,178 +84,295 @@
     padding: 18px 20px;
   }
 
-  .card-head{
-    display:flex;
-    align-items:baseline;
-    gap:10px;
-    margin-bottom: 12px;
-  }
+  .card-head{ display:flex; align-items:baseline; gap:10px; margin-bottom:12px; }
   .num{
-    font-family:'JetBrains Mono';
-    font-size:12px;
-    font-weight:500;
-    width:22px; height:22px;
-    border-radius:6px;
+    font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:500;
+    width:22px; height:22px; border-radius:6px;
     display:flex; align-items:center; justify-content:center;
-    color: var(--navy);
-    flex-shrink:0;
+    color: var(--navy); flex-shrink:0;
   }
-  .card-head h3{
-    font-family:'Space Grotesk';
-    font-size:15px;
-    font-weight:600;
-    margin:0;
-  }
-  .card-head span{
-    font-size:12px;
-    color: var(--ice-dim);
-    margin-left:auto;
-  }
+  .card-head h3{ font-family:'Space Grotesk', sans-serif; font-size:15px; font-weight:600; margin:0; }
+  .card-head span{ font-size:12px; color:var(--ice-dim); margin-left:auto; }
 
-  .row3{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+  .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+  .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .stack{ display:flex; flex-direction:column; gap:10px; }
-  .field-label{
-    font-size:11.5px;
-    color: var(--ice-dim);
-    margin-bottom: 4px;
-    display:block;
-  }
+  .field-label{ font-size:11.5px; color:var(--ice-dim); margin-bottom:4px; display:block; }
 
-  input[type=text]{
+  input[type=text], textarea{
     width:100%;
     background: var(--navy-soft);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 9px 11px;
     color: var(--ice);
-    font-family:'Inter';
+    font-family:'Inter', sans-serif;
     font-size: 13.5px;
     outline:none;
     transition: border-color .15s ease;
   }
-  input[type=text]::placeholder{ color:#5A648C; }
-  input[type=text]:focus{ border-color: var(--blue-soft); }
+  textarea{ resize:vertical; min-height:62px; line-height:1.5; }
+  input[type=text]::placeholder, textarea::placeholder{ color:var(--muted); }
+  input[type=text]:focus, textarea:focus{ border-color: var(--blue-soft); }
 
   select{
-    width:100%;
-    appearance:none;
-    -webkit-appearance:none;
+    width:100%; appearance:none; -webkit-appearance:none;
     background: var(--navy-soft);
     border: 1px solid var(--line);
     border-radius: 8px;
     padding: 10px 38px 10px 12px;
     color: var(--ice);
-    font-family:'Inter';
-    font-size: 13.5px;
-    outline:none;
-    cursor:pointer;
+    font-family:'Inter', sans-serif; font-size:13.5px;
+    outline:none; cursor:pointer;
     background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%23A9B4D6'/></svg>");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
+    background-repeat: no-repeat; background-position: right 14px center;
     transition: border-color .15s ease;
   }
   select:focus{ border-color: var(--blue-soft); }
-  select option, select optgroup{
-    background: var(--navy-soft);
-    color: var(--ice);
-  }
+  select option{ background: var(--navy-soft); color: var(--ice); }
 
+  /* ---------- Combobox: pengganti <select> yang bisa dicari ---------- */
+  .cbx{ position:relative; }
+  .cbx-trigger{
+    width:100%; text-align:left; display:block;
+    background-color: var(--navy-soft);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 10px 62px 10px 12px;
+    color: var(--ice);
+    font-family:'Inter', sans-serif; font-size:13.5px;
+    cursor:pointer; outline:none;
+    transition: border-color .15s ease;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6'><path d='M0 0L5 6L10 0Z' fill='%23A9B4D6'/></svg>");
+    background-repeat:no-repeat; background-position: right 14px center;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .cbx-trigger:focus-visible{ border-color: var(--blue-soft); }
+  .cbx-trigger.is-empty{ color: var(--muted); }
+  .cbx-clear{
+    position:absolute; right:34px; top:50%; transform:translateY(-50%);
+    width:20px; height:20px; border-radius:50%;
+    background: var(--line); border:none; color:var(--ice-dim);
+    font-size:13px; line-height:1; cursor:pointer; padding:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cbx-clear:hover{ background:#39447a; color:var(--ice); }
+  .cbx-panel{
+    position:absolute; z-index:40; left:0; right:0; top:calc(100% + 6px);
+    background:#0D1533; border:1px solid var(--blue-soft);
+    border-radius:10px; padding:8px;
+    box-shadow: 0 18px 44px rgba(0,0,0,.55);
+  }
+  .cbx-search{
+    width:100%; background: var(--navy-soft); border:1px solid var(--line);
+    border-radius:7px; padding:8px 10px; color:var(--ice);
+    font-family:'Inter', sans-serif; font-size:13px; outline:none; margin-bottom:6px;
+  }
+  .cbx-search:focus{ border-color: var(--blue-soft); }
+  .cbx-list{ max-height:260px; overflow-y:auto; outline:none; }
+  .cbx-group{
+    font-size:10.5px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); padding:8px 8px 4px; font-weight:600;
+  }
+  .cbx-opt{
+    padding:7px 9px; border-radius:6px; font-size:13px;
+    cursor:pointer; display:flex; align-items:center; gap:10px;
+  }
+  .cbx-opt .hint{
+    color:var(--muted); font-size:11px; margin-left:auto; text-align:right;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:52%;
+  }
+  .cbx-opt.active{ background: rgba(59,102,255,.24); }
+  .cbx-opt[aria-selected="true"]{ color: var(--blue-soft); font-weight:600; }
+  .cbx-empty{ padding:14px 9px; font-size:12.5px; color:var(--muted); font-style:italic; }
+
+  /* ---------- Segmented control ---------- */
+  .seg-ctl{
+    display:inline-flex; background: var(--navy-soft);
+    border:1px solid var(--line); border-radius:8px; padding:3px; gap:3px;
+  }
+  .seg-ctl button{
+    background:none; border:none; cursor:pointer;
+    font-family:'Inter', sans-serif; font-size:12px; font-weight:500;
+    color: var(--ice-dim); padding:6px 12px; border-radius:6px;
+    transition: background .15s ease, color .15s ease;
+  }
+  .seg-ctl button[aria-pressed="true"]{ background: var(--blue); color:#fff; }
+  .seg-ctl button:not([aria-pressed="true"]):hover{ color: var(--ice); }
+
+  /* ---------- Preset chips ---------- */
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .lang-note{
+    margin:0; font-size:11.5px; line-height:1.5; color:var(--c3);
+    background:var(--c3-dim); border:1px solid rgba(255,184,77,.28);
+    border-radius:8px; padding:8px 10px;
+  }
+  .chip{
+    background: var(--navy-soft); border:1px solid var(--line);
+    border-radius:999px; padding:7px 13px; cursor:pointer;
+    font-family:'Inter', sans-serif; font-size:12.5px; color:var(--ice-dim);
+    transition: border-color .15s ease, color .15s ease;
+  }
+  .chip:hover{ border-color: var(--blue-soft); color: var(--ice); }
+
+  /* ---------- Panel output ---------- */
   .output{
-    position: sticky;
-    top: 28px;
+    min-width:0;
+    position: sticky; top: 28px;
     background: linear-gradient(180deg, #0D1533, #0A1128);
     border: 1px solid var(--line);
     border-radius: 16px;
     padding: 22px 22px 20px;
+    max-height: calc(100vh - 56px);
+    overflow-y: auto;
   }
-  .output-head{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    margin-bottom:14px;
-  }
+  .sheet-handle{ display:none; }
+  .output-head{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
   .output-head h3{
-    font-family:'Space Grotesk';
-    font-size:14px;
-    font-weight:600;
-    margin:0;
-    color: var(--ice-dim);
-    text-transform:uppercase;
-    letter-spacing:.06em;
+    font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:600; margin:0;
+    color: var(--ice-dim); text-transform:uppercase; letter-spacing:.06em;
   }
   .copy-btn{
-    background: var(--blue);
-    color: white;
-    border:none;
-    border-radius:8px;
-    padding:8px 14px;
-    font-family:'Inter';
-    font-size:12.5px;
-    font-weight:600;
-    cursor:pointer;
-    transition: background .15s ease, transform .1s ease;
+    background: var(--blue); color:#fff; border:none; border-radius:8px;
+    padding:9px 16px; font-family:'Inter', sans-serif; font-size:12.5px; font-weight:600;
+    cursor:pointer; transition: background .15s ease, transform .1s ease; white-space:nowrap;
   }
   .copy-btn:hover{ background: var(--blue-soft); }
   .copy-btn:active{ transform: scale(0.97); }
   .copy-btn.copied{ background: var(--c5); color: var(--navy); }
+  .copy-btn.failed{ background: var(--c4); color: var(--navy); }
+  .copy-btn.ghost{ background: var(--navy-soft); border:1px solid var(--line); color: var(--ice-dim); }
+  .copy-btn.ghost:hover{ background:#1a2450; color: var(--ice); }
 
   .prompt-box{
-    font-family:'JetBrains Mono';
-    font-size: 14px;
-    line-height: 2.1;
-    color: var(--ice);
-    min-height: 140px;
+    font-family:'JetBrains Mono', monospace;
+    font-size: 14px; line-height: 2.1; color: var(--ice);
+    min-height: 140px; word-break: break-word;
+  }
+  .prompt-box .empty{ color: var(--muted); font-style:italic; font-size:13px; font-family:'Inter', sans-serif; }
+  .seg{ padding:1px 4px; border-radius:4px; }
+  .seg-1{ color:var(--c1); background:var(--c1-dim); }
+  .seg-2{ color:var(--c2); background:var(--c2-dim); }
+  .seg-3{ color:var(--c3); background:var(--c3-dim); }
+  .seg-4{ color:var(--c4); background:var(--c4-dim); }
+  .seg-5{ color:var(--c5); background:var(--c5-dim); }
+  .seg-6{ color:var(--c6); background:var(--c6-dim); }
+  .seg-7{ color:var(--c7); background:var(--c7-dim); }
+
+  .out-meta{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top:16px; padding-top:14px; border-top:1px solid var(--line);
+  }
+  .counter{ font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--muted); }
+
+  .neg-out{ margin-top:14px; }
+  .neg-out h4{
+    font-family:'Space Grotesk', sans-serif; font-size:11.5px; font-weight:600; margin:0 0 6px;
+    color: var(--ice-dim); text-transform:uppercase; letter-spacing:.06em;
+  }
+  .neg-out .neg-text{
+    font-family:'JetBrains Mono', monospace; font-size:12.5px; line-height:1.7;
+    color:#FCA5A5; background: rgba(248,113,113,.09);
+    border:1px solid rgba(248,113,113,.25); border-radius:8px; padding:9px 11px;
     word-break: break-word;
   }
-  .prompt-box .empty{
-    color:#5A648C;
-    font-style: italic;
-    font-size:13px;
-  }
-  .seg{
-    padding: 1px 3px;
-    border-radius: 4px;
-  }
+  .neg-row{ display:flex; justify-content:flex-end; margin-top:8px; }
 
   .legend{
-    display:flex;
-    flex-wrap:wrap;
-    gap: 8px 14px;
-    margin-top: 18px;
-    padding-top: 16px;
-    border-top: 1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:8px 14px;
+    margin-top:16px; padding-top:14px; border-top:1px solid var(--line);
   }
-  .legend-item{
-    display:flex;
-    align-items:center;
-    gap:6px;
-    font-size: 11.5px;
-    color: var(--ice-dim);
-  }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--ice-dim); }
   .dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 
-  .reset-row{
-    margin-top:16px;
-    display:flex;
-    justify-content:flex-end;
+  /* ---------- Baris aksi & riwayat ---------- */
+  .action-row{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:2px; }
+  .action-row .spacer{ margin-left:auto; }
+  .link-btn{
+    background:none; border:none; color:var(--ice-dim);
+    font-size:12.5px; font-family:'Inter', sans-serif; cursor:pointer;
+    text-decoration:underline; text-underline-offset:3px; padding:6px 2px;
   }
-  .reset-btn{
-    background:none;
-    border:none;
-    color: var(--ice-dim);
-    font-size:12.5px;
-    font-family:'Inter';
-    cursor:pointer;
-    text-decoration:underline;
-    text-underline-offset:3px;
+  .link-btn:hover{ color: var(--ice); }
+  .ghost-btn{
+    background: var(--navy-soft); border:1px solid var(--line); border-radius:8px;
+    color: var(--ice-dim); font-family:'Inter', sans-serif; font-size:12.5px; font-weight:500;
+    padding:8px 14px; cursor:pointer; transition: border-color .15s ease, color .15s ease;
   }
-  .reset-btn:hover{ color: var(--ice); }
+  .ghost-btn:hover{ border-color: var(--blue-soft); color: var(--ice); }
 
-  footer{
-    text-align:center;
-    margin-top: 48px;
-    color: #4A5480;
-    font-size: 12px;
+  .hist-list{ display:flex; flex-direction:column; gap:6px; }
+  .hist-item{
+    display:flex; align-items:center; gap:10px; min-width:0;
+    background: var(--navy-soft); border:1px solid var(--line);
+    border-radius:8px; padding:8px 10px;
+  }
+  .hist-item button.restore{
+    flex:1; min-width:0; text-align:left; background:none; border:none; cursor:pointer;
+    color: var(--ice-dim); font-family:'JetBrains Mono', monospace; font-size:11.5px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0;
+  }
+  .hist-item button.restore:hover{ color: var(--ice); }
+  .hist-item .when{ font-size:10.5px; color: var(--muted); flex-shrink:0; }
+  .hist-item .del{
+    background:none; border:none; color:var(--muted); cursor:pointer;
+    font-size:14px; line-height:1; padding:0 2px; flex-shrink:0;
+  }
+  .hist-item .del:hover{ color: var(--c4); }
+  .hist-empty{ font-size:12.5px; color:var(--muted); font-style:italic; }
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position: fixed; left:50%; bottom:26px; transform: translate(-50%, 16px);
+    background:#0D1533; border:1px solid var(--blue-soft); color:var(--ice);
+    padding:11px 18px; border-radius:10px; font-size:13px;
+    box-shadow: 0 14px 40px rgba(0,0,0,.55);
+    opacity:0; pointer-events:none; transition: opacity .2s ease, transform .2s ease;
+    z-index: 200; max-width: min(92vw, 460px); text-align:center;
+  }
+  .toast.show{ opacity:1; transform: translate(-50%, 0); }
+
+  footer{ text-align:center; margin-top:48px; color:#4A5480; font-size:12px; }
+  .sr-only{
+    position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+  }
+
+  /* ---------- Mobile: panel output jadi bottom sheet ---------- */
+  @media (max-width: 880px){
+    body{ padding: 28px 16px 96px; }
+    .grid{ grid-template-columns: 1fr; }
+    .row3{ grid-template-columns: 1fr; }
+    .output{
+      position: fixed; left:0; right:0; bottom:0; top:auto;
+      border-radius: 16px 16px 0 0;
+      border-left:none; border-right:none; border-bottom:none;
+      padding: 0 18px 18px;
+      max-height: 80vh; overflow-y:auto;
+      z-index: 100;
+      box-shadow: 0 -12px 40px rgba(0,0,0,.55);
+      transform: translateY(calc(100% - 56px));
+      transition: transform .26s ease;
+    }
+    .output.open{ transform: translateY(0); }
+    /* Tinggi handle dikunci 56px dan dipakai juga oleh transform .output,
+       supaya strip yang terlihat saat tertutup pas menutupi handle. */
+    .sheet-handle{
+      display:flex; align-items:center; gap:10px; width:100%;
+      height:56px; padding:0; box-sizing:border-box;
+      border:none; cursor:pointer; background:#0D1533;
+      position:sticky; top:0; z-index:2;
+      font-family:'Inter', sans-serif;
+    }
+    .output-head h3{ display:none; }        /* judulnya sudah ada di handle */
+    .output-head{ justify-content:flex-end; margin-bottom:10px; }
+    .sheet-handle .grabber{ width:34px; height:4px; border-radius:2px; background: var(--line); flex-shrink:0; }
+    .sheet-handle .sheet-label{ font-size:12.5px; color: var(--ice-dim); font-weight:600; }
+    .sheet-handle .sheet-count{ margin-left:auto; font-size:11px; color: var(--muted); font-family:'JetBrains Mono', monospace; }
+    .prompt-box{ min-height: 90px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ transition: none !important; }
   }
 </style>
 </head>
@@ -281,7 +380,11 @@
 <div class="wrap">
 
   <header>
-    <img class="logo" src="logo.png" alt="Wahana Lab">
+    <svg class="logo" viewBox="0 0 32 32" role="img" aria-label="Logo Wahana Lab">
+      <rect width="32" height="32" rx="12" fill="#000"></rect>
+      <path d="M6 10l3.4 12L12.8 13l3.4 9L19.6 10" stroke="#3B66FF" stroke-width="2.4" fill="none" stroke-linejoin="round" stroke-linecap="round"></path>
+      <circle cx="25" cy="11.5" r="2.6" fill="#4FD8EA"></circle>
+    </svg>
     <div>
       <h1>Wahana Lab</h1>
       <p>Prompt Builder — generate AI image</p>
@@ -290,7 +393,7 @@
 
   <div class="intro">
     <h2>Susun prompt, bukan tebak-tebakan.</h2>
-    <p>Pilih tiap elemen di bawah. Prompt di kanan otomatis terangkai — warna tiap frasa nunjukin dari elemen mana asalnya.</p>
+    <p>Pilih tiap elemen di bawah. Prompt di kanan otomatis terangkai — warna tiap frasa nunjukin dari elemen mana asalnya. Bisa dikeluarkan dalam bahasa Indonesia atau Inggris.</p>
   </div>
 
   <div class="grid">
@@ -299,14 +402,39 @@
 
       <div class="card">
         <div class="card-head">
+          <div class="num" style="background:var(--blue-soft)">★</div>
+          <h3>Mulai cepat</h3>
+          <span>preset mengisi elemen 2–6</span>
+        </div>
+        <div class="chips" id="presetChips"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
           <div class="num" style="background:var(--c1)">1</div>
           <h3>Subjek</h3>
           <span>objek · atribut · ekspresi</span>
         </div>
-        <div class="row3">
-          <input type="text" id="subjObjek" placeholder="objek (mis. prajurit)">
-          <input type="text" id="subjAtribut" placeholder="atribut (mis. tua)">
-          <input type="text" id="subjEkspresi" placeholder="ekspresi (mis. lelah)">
+        <div class="stack">
+          <div class="row3">
+            <div>
+              <label class="field-label" for="subjObjek">Objek</label>
+              <input type="text" id="subjObjek" placeholder="mis. prajurit">
+            </div>
+            <div>
+              <label class="field-label" for="subjAtribut">Atribut</label>
+              <input type="text" id="subjAtribut" placeholder="mis. tua">
+            </div>
+            <div>
+              <label class="field-label" for="subjEkspresi">Ekspresi</label>
+              <input type="text" id="subjEkspresi" placeholder="mis. lelah">
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="subjExtra">Tambahan bebas</label>
+            <input type="text" id="subjExtra" placeholder="detail lain tentang subjek (opsional)">
+          </div>
+          <p class="lang-note" id="langNote" hidden>Output diset ke <strong>EN</strong> — tulis subjek, tambahan bebas, dan negative prompt dalam bahasa Inggris juga supaya prompt tidak campur bahasa.</p>
         </div>
       </div>
 
@@ -314,159 +442,21 @@
         <div class="card-head">
           <div class="num" style="background:var(--c2)">2</div>
           <h3>Gaya Visual</h3>
-          <span>karakter · objek</span>
+          <span id="styleModeHint">karakter</span>
         </div>
         <div class="stack">
-          <div>
-            <label class="field-label">Untuk makhluk hidup (orang / binatang)</label>
-            <select id="gayaHidup">
-              <option value="">— pilih gaya karakter —</option>
-              <optgroup label="Animasi & kartun">
-                <option value="gaya anime Jepang, mata besar dan garis tegas">Anime</option>
-                <option value="gaya chibi, tubuh kecil kepala besar, ekspresi lucu">Chibi</option>
-                <option value="terinspirasi Studio Ghibli, suasana hangat dan detail alam">Studio Ghibli</option>
-                <option value="animasi 3D ala Pixar, warna cerah dan proporsi lucu">Pixar</option>
-                <option value="gaya animasi Disney, mata ekspresif dan gerakan lembut">Disney</option>
-                <option value="gaya DreamWorks, karakter kartun ekspresif dan dinamis">DreamWorks</option>
-                <option value="gaya Fortnite, kartun stylized cerah">Fortnite cartoon</option>
-                <option value="gaya avatar Roblox, bentuk blok sederhana">Roblox</option>
-                <option value="gaya storybook, ilustrasi buku anak yang hangat">Storybook</option>
-                <option value="dunia dongeng fairytale, magis dan lembut">Fairytale</option>
-              </optgroup>
-              <optgroup label="Komik & gambar tangan">
-                <option value="gaya panel komik, garis tebal dan efek dot shading">Comic book</option>
-                <option value="gaya cover manga, komposisi dramatis hitam-putih dan aksen bold">Manga cover</option>
-                <option value="digambar dengan gaya watercolor, warna lembut menyatu">Watercolor</option>
-                <option value="gaya oil painting, sapuan kuas tebal dan tekstur kanvas terlihat">Oil painting</option>
-                <option value="sketsa charcoal, garis kasar hitam-putih dengan bayangan tegas">Charcoal</option>
-                <option value="sketsa pensil tangan, arsiran halus dan garis konstruksi terlihat">Pencil sketch</option>
-                <option value="ilustrasi tinta hitam, kontras tajam dan garis yakin">Ink drawing</option>
-                <option value="gaya doodle, goresan iseng yang playful">Doodle</option>
-                <option value="line art sederhana, outline bersih tanpa shading rumit">Line art</option>
-                <option value="gaya graffiti, cat semprot di dinding kota">Graffiti</option>
-                <option value="gaya pop art ala Warhol, warna mencolok dan repetisi">Pop art</option>
-                <option value="gaya kubisme, wajah terpecah jadi bidang geometris">Cubism</option>
-                <option value="lukisan surealis, logika mimpi dan bentuk mustahil">Surreal</option>
-                <option value="ekspresionisme, emosi kuat lewat warna dan goresan kasar">Expressionism</option>
-              </optgroup>
-              <optgroup label="Era & suasana">
-                <option value="gaya renaissance, cahaya klasik Eropa dan proporsi ideal">Renaissance</option>
-                <option value="gaya baroque, dramatis, kaya detail dan kontras cahaya">Baroque</option>
-                <option value="atmosfer gothic, gelap, runcing, dan monumental">Gothic</option>
-                <option value="gaya film noir, hitam-putih dengan kontras dramatis">Film noir</option>
-                <option value="nuansa vintage 90-an, warna pudar dan grain film">Vintage 90s</option>
-                <option value="estetika Y2K, krom, plastik mengkilap, dan futuristik awal 2000-an">Y2K</option>
-                <option value="gaya vaporwave, gradasi pink-ungu-biru neon">Vaporwave</option>
-                <option value="synthwave, langit matahari terbenam neon dan grid">Synthwave</option>
-              </optgroup>
-              <optgroup label="Mainan & figur">
-                <option value="gaya claymation, tekstur clay dengan jejak jari terlihat">Claymation</option>
-                <option value="karakter dari bata LEGO, sendi minifigure terlihat">LEGO minifig</option>
-                <option value="gaya Funko Pop, kepala besar, mata hitam, tubuh kecil">Funko Pop</option>
-                <option value="action figure koleksi, sendi articulated dan kemasan display">Action figure</option>
-                <option value="boneka kayu puppet, sendi terlihat dan permukaan dicat">Wooden puppet</option>
-                <option value="karakter dari kain felt, tepi jahitan terlihat">Felt character</option>
-                <option value="karakter rajutan benang, tekstur knits jelas">Knitted / crochet</option>
-              </optgroup>
-              <optgroup label="Pixel & game">
-                <option value="pixel art 8-bit, palet terbatas dan dithering">Pixel art</option>
-                <option value="potret pixel, wajah blocky dengan palet retro">Pixel portrait</option>
-                <option value="model 3D low poly, facet geometris terlihat">Low poly</option>
-                <option value="dunia voxel, tubuh tersusun kubus kecil">Voxel</option>
-                <option value="gaya Minecraft, karakter blocky dan tekstur kasar">Minecraft</option>
-                <option value="grafis PlayStation 1, tekstur rendah dan vertex wobble">PS1</option>
-                <option value="tampilan layar Game Boy, hijau monokrom dan piksel kasar">Game Boy</option>
-              </optgroup>
-              <optgroup label="Tema karakter">
-                <option value="suasana cyberpunk, lampu neon dan kota padat futuristik">Cyberpunk</option>
-                <option value="gaya steampunk, mesin uap dan gir tembaga era Victorian">Steampunk</option>
-                <option value="prajurit samurai, baju zirah tradisional Jepang">Samurai</option>
-                <option value="ninja, siluet gelap dan gerakan diam-diam">Ninja</option>
-                <option value="pejuang viking, bulu, zirah kulit, dan nuansa Nordik">Viking</option>
-                <option value="dunia fantasi abad pertengahan, kastil dan baju zirah">Medieval fantasy</option>
-                <option value="karakter elf elegan, ciri khas telinga runcing dan kain ringan">Elf</option>
-                <option value="penyihir, jubah, tongkat, dan aura sihir">Wizard</option>
-                <option value="gaya mitologi, dewa dan makhluk legenda">Mythology</option>
-                <option value="karakter robot humanoid dengan panel mekanis">Robot</option>
-                <option value="mecha raksasa, zirah plat dan sendi hidrolik">Mecha</option>
-                <option value="cyborg, daging manusia menyatu dengan mesin">Cyborg</option>
-                <option value="fotorealistik, terlihat seperti foto sungguhan">Photorealistic</option>
-                <option value="frame sinematik, grading film dan komposisi movie-like">Cinematic</option>
-              </optgroup>
-            </select>
+          <div class="seg-ctl" role="group" aria-label="Jenis subjek untuk gaya visual">
+            <button type="button" id="modeHidup" aria-pressed="true">Makhluk hidup</button>
+            <button type="button" id="modeBenda" aria-pressed="false">Benda mati</button>
           </div>
           <div>
-            <label class="field-label">Untuk benda mati (objek / produk / tempat)</label>
-            <select id="gayaBenda">
-              <option value="">— pilih gaya objek —</option>
-              <optgroup label="Teknik & desain">
-                <option value="gambar teknik blueprint, garis putih di kertas biru">Blueprint</option>
-                <option value="ilustrasi isometrik, sudut 3D miring yang rapi">Isometric</option>
-                <option value="gaya arsitektur, render bangunan yang bersih dan presisi">Architecture</option>
-                <option value="desain interior ruangan, tata letak dan material jelas">Interior</option>
-                <option value="ruangan sci-fi, panel, cahaya strip, dan permukaan steril">Sci-fi room</option>
-                <option value="flat design modern, bentuk datar dan warna solid">Flat design</option>
-                <option value="desain minimal, sedikit elemen dan ruang kosong luas">Minimal</option>
-                <option value="glassmorphism, kaca buram dan highlight lembut">Glassmorphism</option>
-                <option value="gaya brutalist, beton mentah dan bentuk berat">Brutalist</option>
-                <option value="bauhaus, geometri sederhana dan warna primer">Bauhaus</option>
-                <option value="art deco, garis elegan, simetri, dan kemewahan geometris">Art deco</option>
-                <option value="memphis design, pola 80-an yang cerah dan playful">Memphis</option>
-              </optgroup>
-              <optgroup label="Foto & produk">
-                <option value="foto produk profesional, studio, highlight bersih">Product shot</option>
-                <option value="foto makro, detail ekstrem permukaan benda">Macro</option>
-                <option value="lensa fisheye, distorsi lebar yang dramatis">Fisheye</option>
-                <option value="tampilan drone dari udara, komposisi aerial">Drone view</option>
-                <option value="HDR, rentang terang-gelap yang lebar dan tajam">HDR</option>
-                <option value="foto polaroid, bingkai putih dan warna sedikit faded">Polaroid</option>
-              </optgroup>
-              <optgroup label="Material & patung">
-                <option value="patung marmer putih, permukaan halus mengkilap">Marble</option>
-                <option value="patung perunggu, patina gelap dan highlight logam">Bronze</option>
-                <option value="keramik mengkilap, glaze halus dan tepi buatan tangan">Ceramic</option>
-                <option value="porselen halus, putih tembus cahaya">Porcelain</option>
-                <option value="kristal transparan, bias cahaya dan facet tajam">Crystal</option>
-                <option value="permukaan berlian, kilau tajam dan refraksi pelangi">Diamond</option>
-                <option value="finishing emas mewah, reflect emas yang kaya">Gold luxury</option>
-                <option value="logam chrome perak, pantulan mirror-like">Silver chrome</option>
-                <option value="logam berkarat, tekstur kasar dan warna oksida">Rusted metal</option>
-                <option value="tembaga teroksidasi, hijau patina">Oxidized copper</option>
-                <option value="ukiran kayu, urat kayu dan bekas pahat terlihat">Wood carving</option>
-                <option value="patung es, transparan, retak halus, dan dingin">Ice carving</option>
-                <option value="kaca artistik, tebal, pantulan, dan caustics">Glass art</option>
-                <option value="permukaan holografik, kilau pelangi yang bergeser">Holographic</option>
-                <option value="iridescent, warna berubah sesuai sudut pandang">Iridescent</option>
-              </optgroup>
-              <optgroup label="Kertas & kerajinan">
-                <option value="bentuk origami kertas terlipat, sudut tajam geometris">Origami</option>
-                <option value="seni potongan kertas berlapis, bayangan antar lapis">Papercut</option>
-                <option value="quilling, gulungan kertas berwarna yang rapat">Quilling</option>
-                <option value="sulaman embroidery, benang dan tusukan rapi">Embroidery</option>
-                <option value="mosaik ubin, pecahan warna tersusun rapat">Mosaic</option>
-                <option value="pola mandala, simetri radial yang rumit">Mandala</option>
-              </optgroup>
-              <optgroup label="Branding & cetak">
-                <option value="poster film, judul besar dan komposisi ikonik">Movie poster</option>
-                <option value="cover majalah, tipografi editorial dan foto utama">Magazine cover</option>
-                <option value="cover album musik, komposisi square yang kuat">Album cover</option>
-                <option value="desain stiker, outline tebal dan siap dipotong">Sticker</option>
-                <option value="emblem premium, perisai, pita, dan detail heraldik">Emblem</option>
-                <option value="logo mark yang bersih dan mudah diingat">Logo</option>
-                <option value="ikon aplikasi, bentuk sederhana di dalam rounded square">App icon</option>
-                <option value="trading card, bingkai koleksi dan stats panel">Trading card</option>
-                <option value="peta ilustrasi, kompas, dan label tempat">Map illustration</option>
-              </optgroup>
-              <optgroup label="Teknologi & objek scene">
-                <option value="wireframe 3D, garis tepi objek tanpa tekstur">Wireframe</option>
-                <option value="tampilan HUD sci-fi, overlay data dan reticle">Sci-fi HUD</option>
-                <option value="antarmuka neon, tombol dan panel menyala">Neon UI</option>
-                <option value="terminal hacker, teks hijau di layar gelap">Hacker terminal</option>
-                <option value="pesawat ruang angkasa, hull, antenna, dan thruster">Spaceship</option>
-                <option value="mesin waktu, cincin, panel kuno, dan cahaya portal">Time machine</option>
-                <option value="mesin uap kompleks, pipa, katup, dan manometer">Steam machinery</option>
-              </optgroup>
-            </select>
+            <label class="field-label" id="gayaLabel">Gaya untuk makhluk hidup (orang / binatang)</label>
+            <div id="cbxGayaHidup"></div>
+            <div id="cbxGayaBenda" hidden></div>
+          </div>
+          <div>
+            <label class="field-label" for="gayaExtra">Tambahan bebas</label>
+            <input type="text" id="gayaExtra" placeholder="gaya lain yang belum ada di daftar (opsional)">
           </div>
         </div>
       </div>
@@ -475,178 +465,146 @@
         <div class="card-head">
           <div class="num" style="background:var(--c3)">3</div>
           <h3>Framing</h3>
+          <span>jarak · sudut · komposisi</span>
         </div>
-        <select id="framing">
-          <option value="">— pilih framing —</option>
-          <optgroup label="Jarak kamera">
-            <option value="extreme close-up, hanya detail kecil yang mengisi frame">Extreme close-up</option>
-            <option value="close-up wajah, detail ekspresi terlihat jelas">Close-up</option>
-            <option value="medium shot setengah badan, latar sedikit terlihat">Medium shot</option>
-            <option value="full body shot, seluruh tubuh terlihat dari kepala sampai kaki">Full body</option>
-            <option value="wide shot, subjek kecil di tengah pemandangan luas">Wide shot / long shot</option>
-            <option value="establishing shot, memperkenalkan lokasi secara luas">Establishing shot</option>
-          </optgroup>
-          <optgroup label="Sudut kamera">
-            <option value="eye-level shot, kamera sejajar mata subjek">Eye level</option>
-            <option value="low angle shot, kamera dari bawah membuat subjek terlihat megah">Low angle</option>
-            <option value="high angle shot, kamera dari atas membuat subjek terlihat kecil">High angle</option>
-            <option value="diambil dari bird's eye view, terlihat dari atas lurus ke bawah">Bird's eye view</option>
-            <option value="worm's eye view, dari tanah menatap ke atas">Worm's eye view</option>
-            <option value="dutch angle, frame miring yang menimbulkan keresahan">Dutch angle</option>
-            <option value="tampilan drone aerial, komposisi dari udara">Aerial / drone</option>
-          </optgroup>
-          <optgroup label="Komposisi">
-            <option value="komposisi rule of thirds, subjek diposisikan di sepertiga frame">Rule of thirds</option>
-            <option value="komposisi simetris, subjek tepat di tengah dan seimbang">Centered / symmetrical</option>
-            <option value="frame within a frame, subjek dikurung pintu, jendela, atau lengkungan">Frame within a frame</option>
-            <option value="leading lines, garis-garis mengarah ke subjek utama">Leading lines</option>
-            <option value="negative space luas, subjek kecil dengan ruang kosong yang kuat">Negative space</option>
-            <option value="over-the-shoulder shot, dari belakang bahu seseorang melihat ke depan">Over-the-shoulder</option>
-            <option value="POV shot, seolah dilihat langsung dari mata subjek">POV</option>
-            <option value="two-shot, dua subjek berbagi frame">Two-shot</option>
-            <option value="profil samping, siluet atau wajah dari sisi">Side profile</option>
-            <option value="tampak belakang subjek, tidak menghadap kamera">From behind</option>
-          </optgroup>
-        </select>
+        <div class="stack">
+          <div id="cbxFraming"></div>
+          <input type="text" id="framingExtra" placeholder="tambahan framing (opsional)" aria-label="Tambahan framing">
+        </div>
       </div>
 
       <div class="card">
         <div class="card-head">
           <div class="num" style="background:var(--c4)">4</div>
           <h3>Pencahayaan</h3>
+          <span>alam · studio · sumber khusus</span>
         </div>
-        <select id="lighting">
-          <option value="">— pilih pencahayaan —</option>
-          <optgroup label="Waktu & alam">
-            <option value="pencahayaan golden hour, cahaya oranye hangat menyinari dari samping">Golden hour</option>
-            <option value="blue hour lighting, cahaya biru dingin sesaat sebelum gelap total">Blue hour</option>
-            <option value="cahaya matahari tengah hari yang keras, bayangan pendek dan tajam">Harsh midday sun</option>
-            <option value="cahaya overcast, lembut merata tanpa bayangan tegas">Overcast / diffused</option>
-            <option value="cahaya bulan, pucat keperakan di malam hari">Moonlight</option>
-            <option value="god rays volumetrik, berkas cahaya menembus debu atau kabut">God rays / volumetric</option>
-            <option value="aurora, langit hijau-ungu yang memantul ke subjek">Aurora light</option>
-          </optgroup>
-          <optgroup label="Studio & dramatis">
-            <option value="soft studio light, cahaya merata tanpa bayangan tajam">Soft studio light</option>
-            <option value="ring light, catchlight bundar di mata dan wajah merata">Ring light</option>
-            <option value="Rembrandt lighting, segitiga cahaya kecil di pipi yang teduh">Rembrandt</option>
-            <option value="rim light, garis cahaya di tepi siluet subjek">Rim light</option>
-            <option value="backlit, siluet gelap dengan cahaya terang dari belakang">Backlit / silhouette</option>
-            <option value="dramatic shadow lighting, kontras tinggi antara terang dan gelap">Dramatic shadow</option>
-            <option value="chiaroscuro, gelap pekat dengan satu sumber cahaya kuat">Chiaroscuro</option>
-            <option value="spotlight, satu titik cahaya mengisolasi subjek dari gelap">Spotlight</option>
-          </optgroup>
-          <optgroup label="Sumber khusus">
-            <option value="cahaya candlelight, hangat redup dan berkedip lembut">Candlelight</option>
-            <option value="diterangi neon glow warna pink dan biru dari papan reklame">Neon glow</option>
-            <option value="cahaya api unggun, oranye berkedip dari bawah">Campfire</option>
-            <option value="kilat petir sekejap, freeze motion yang keras">Lightning flash</option>
-            <option value="cahaya fluorescent kehijauan, nuansa kantor atau ruang bawah tanah">Fluorescent</option>
-            <option value="practical lights, lampu yang terlihat di dalam scene sebagai sumber">Practical lights</option>
-            <option value="cahaya layar monitor, biru dingin menyinari wajah di gelap">Screen glow</option>
-            <option value="bioluminescent, cahaya organik yang memancar dari dalam">Bioluminescent</option>
-          </optgroup>
-        </select>
+        <div class="stack">
+          <div id="cbxLighting"></div>
+          <input type="text" id="lightingExtra" placeholder="tambahan pencahayaan (opsional)" aria-label="Tambahan pencahayaan">
+        </div>
       </div>
 
       <div class="card">
         <div class="card-head">
           <div class="num" style="background:var(--c5)">5</div>
           <h3>Mood</h3>
+          <span>atmosfer</span>
         </div>
-        <select id="mood">
-          <option value="">— pilih mood —</option>
-          <optgroup label="Tenang & hangat">
-            <option value="suasana tenang dan damai, tanpa ketegangan">Tenang / serene</option>
-            <option value="suasana cozy dan hangat, aman seperti di rumah">Cozy / warm</option>
-            <option value="nuansa nostalgic, mengingatkan pada kenangan masa lalu">Nostalgic</option>
-            <option value="suasana romantis, lembut dan intim">Romantis</option>
-            <option value="suasana ceria dan playful, warna-warni dan ringan">Ceria / playful</option>
-            <option value="whimsical, ajaib ringan dan sedikit nakal">Whimsical</option>
-            <option value="dreamy, seperti mimpi yang kabur dan lembut">Dreamy</option>
-          </optgroup>
-          <optgroup label="Gelap & tegang">
-            <option value="atmosfer tegang, seolah ada yang mengintai">Tegang / tense</option>
-            <option value="atmosfer misterius, banyak bayangan dan sudut gelap">Misterius</option>
-            <option value="nuansa horror, uncanny dan menakutkan">Horror / eerie</option>
-            <option value="nuansa melankolis, sendu dan reflektif">Melankolis</option>
-            <option value="kesepian, subjek terisolasi di ruang yang luas">Kesepian / isolated</option>
-            <option value="suasana apokaliptik, runtuh dan sunyi setelah bencana">Apokaliptik</option>
-            <option value="agresif, energi kasar dan konfrontatif">Agresif</option>
-          </optgroup>
-          <optgroup label="Besar & spekulatif">
-            <option value="suasana megah dan epic, skala besar dan dramatis">Megah / epic</option>
-            <option value="heroik, kemenangan dan keberanian">Heroik</option>
-            <option value="suasana futuristik, dingin dan penuh teknologi">Futuristik</option>
-            <option value="klinis dan dingin, steril seperti laboratorium">Klinis / cold</option>
-            <option value="sakral, khidmat, dan spiritual">Sakral / spiritual</option>
-            <option value="triumphant, puncak kemenangan yang menyala">Triumphant</option>
-          </optgroup>
-        </select>
+        <div class="stack">
+          <div id="cbxMood"></div>
+          <input type="text" id="moodExtra" placeholder="tambahan mood (opsional)" aria-label="Tambahan mood">
+        </div>
       </div>
 
       <div class="card">
         <div class="card-head">
           <div class="num" style="background:var(--c6)">6</div>
           <h3>Detail Teknis</h3>
+          <span>tekstur · warna · lensa</span>
         </div>
-        <select id="detail">
-          <option value="">— pilih detail —</option>
-          <optgroup label="Tekstur & material">
-            <option value="tekstur permukaan berkarat dan kasar">Tekstur berkarat / kasar</option>
-            <option value="permukaan mengkilap halus">Tekstur mengkilap halus</option>
-            <option value="material dominan logam tua">Material logam tua</option>
-            <option value="terbuat dari kayu dengan urat kayu terlihat jelas">Material kayu</option>
-            <option value="permukaan kaca atau transparan dengan caustics">Material kaca</option>
-            <option value="kain dengan weave dan lipatan yang jelas">Tekstur kain</option>
-            <option value="kulit atau leather aus, retak halus dan kilau minyak">Tekstur leather</option>
-            <option value="kulit basah, keringat atau hujan terlihat di permukaan">Wet skin / wet surface</option>
-          </optgroup>
-          <optgroup label="Warna">
-            <option value="palet warna monokrom hitam-putih">Palet monokrom</option>
-            <option value="warna hangat dominan oranye dan merah">Palet warna hangat</option>
-            <option value="palet dingin, biru dan teal yang tenang">Palet warna dingin</option>
-            <option value="palet complementary yang kontras tajam">Palet kontras komplementer</option>
-            <option value="warna muted, desaturasi halus seperti film lama">Muted / desaturated</option>
-            <option value="warna neon menyala di atas latar gelap">Palet neon</option>
-          </optgroup>
-          <optgroup label="Ketajaman & lensa">
-            <option value="ultra-detail, setiap tekstur terlihat tajam">Ultra-detail</option>
-            <option value="gaya minimal, sedikit detail dan clean">Minimal / clean</option>
-            <option value="rendering 8K, sharp focus">Rendering 8K, sharp focus</option>
-            <option value="depth of field, background blur lembut">Depth of field / bokeh</option>
-            <option value="tilt-shift, seolah dunia miniatur dengan fokus sempit">Tilt-shift</option>
-            <option value="motion blur halus pada elemen yang bergerak">Motion blur</option>
-            <option value="long exposure, jejak cahaya dan air yang sutra">Long exposure</option>
-            <option value="film grain terlihat, tekstur analog">Film grain</option>
-            <option value="chromatic aberration tipis di tepi frame">Chromatic aberration</option>
-            <option value="lens flare sinematik dari sumber cahaya terang">Lens flare</option>
-          </optgroup>
-        </select>
+        <div class="stack">
+          <div id="cbxDetail"></div>
+          <input type="text" id="detailExtra" placeholder="tambahan detail (opsional)" aria-label="Tambahan detail teknis">
+        </div>
       </div>
 
-      <div class="reset-row">
-        <button class="reset-btn" onclick="resetAll()">Reset semua pilihan</button>
+      <div class="card">
+        <div class="card-head">
+          <div class="num" style="background:var(--c7)">7</div>
+          <h3>Output &amp; Parameter</h3>
+          <span>rasio · negative prompt</span>
+        </div>
+        <div class="stack">
+          <div class="row2">
+            <div>
+              <label class="field-label" for="target">Target model</label>
+              <select id="target">
+                <option value="chatgpt">ChatGPT / DALL·E</option>
+                <option value="midjourney">Midjourney</option>
+                <option value="sd">Stable Diffusion</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="ratio">Aspect ratio</label>
+              <select id="ratio">
+                <option value="">— tanpa rasio —</option>
+                <option value="1:1">1:1 — persegi</option>
+                <option value="4:5">4:5 — potret sosmed</option>
+                <option value="3:4">3:4 — potret</option>
+                <option value="2:3">2:3 — poster</option>
+                <option value="9:16">9:16 — story / reels</option>
+                <option value="4:3">4:3 — lanskap klasik</option>
+                <option value="3:2">3:2 — foto</option>
+                <option value="16:9">16:9 — sinematik</option>
+                <option value="21:9">21:9 — ultra-wide</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="negative">Negative prompt <span id="negHint" style="color:var(--muted)"></span></label>
+            <textarea id="negative" placeholder="hal yang ingin dihindari, pisahkan dengan koma (mis. blur, teks, tangan cacat)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="action-row">
+        <button type="button" class="ghost-btn" id="randomBtn">🎲 Acak</button>
+        <button type="button" class="ghost-btn" id="shareBtn">🔗 Bagikan link</button>
+        <button type="button" class="link-btn spacer" id="resetBtn">Reset semua pilihan</button>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <div class="num" style="background:var(--ice-dim)">↺</div>
+          <h3>Riwayat</h3>
+          <span>10 prompt terakhir yang disalin</span>
+        </div>
+        <div class="hist-list" id="histList"></div>
       </div>
 
     </div>
 
-    <div class="output">
+    <div class="output" id="outputPanel">
+      <button type="button" class="sheet-handle" id="sheetHandle" aria-expanded="false" aria-controls="promptBox">
+        <span class="grabber"></span>
+        <span class="sheet-label">Prompt Kamu</span>
+        <span class="sheet-count" id="sheetCount">0 karakter</span>
+      </button>
+
       <div class="output-head">
         <h3>Prompt Kamu</h3>
-        <button class="copy-btn" id="copyBtn" onclick="copyPrompt()">Salin prompt</button>
+        <div class="seg-ctl" role="group" aria-label="Bahasa output prompt">
+          <button type="button" id="langId" aria-pressed="true" title="Output bahasa Indonesia">ID</button>
+          <button type="button" id="langEn" aria-pressed="false" title="Output bahasa Inggris — direkomendasikan">EN</button>
+        </div>
       </div>
+
       <div class="prompt-box" id="promptBox">
         <span class="empty">Mulai isi elemen di kiri — prompt bakal muncul di sini secara otomatis.</span>
       </div>
 
+      <div class="out-meta">
+        <span class="counter" id="counter">0 karakter · 0 kata</span>
+        <button type="button" class="copy-btn" id="copyBtn">Salin prompt</button>
+      </div>
+
+      <div class="neg-out" id="negOut" hidden>
+        <h4>Negative prompt</h4>
+        <div class="neg-text" id="negText"></div>
+        <div class="neg-row">
+          <button type="button" class="copy-btn ghost" id="copyNegBtn">Salin negative</button>
+        </div>
+      </div>
+
       <div class="legend">
-        <div class="legend-item"><div class="dot" style="background:var(--c1)"></div>Subjek</div>
-        <div class="legend-item"><div class="dot" style="background:var(--c2)"></div>Gaya</div>
-        <div class="legend-item"><div class="dot" style="background:var(--c3)"></div>Framing</div>
-        <div class="legend-item"><div class="dot" style="background:var(--c4)"></div>Lighting</div>
-        <div class="legend-item"><div class="dot" style="background:var(--c5)"></div>Mood</div>
-        <div class="legend-item"><div class="dot" style="background:var(--c6)"></div>Detail</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c1)"></span>Subjek</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c2)"></span>Gaya</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c3)"></span>Framing</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c4)"></span>Lighting</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c5)"></span>Mood</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c6)"></span>Detail</div>
+        <div class="legend-item"><span class="dot" style="background:var(--c7)"></span>Output</div>
       </div>
     </div>
 
@@ -655,92 +613,894 @@
   <footer>Wahana Lab — explore AI, build solutions, empower future.</footer>
 </div>
 
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
 <script>
-function esc(s){
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
+"use strict";
 
-function collect(){
-  const objek = document.getElementById('subjObjek').value.trim();
-  const atribut = document.getElementById('subjAtribut').value.trim();
-  const ekspresi = document.getElementById('subjEkspresi').value.trim();
-  return {
-    objek, atribut, ekspresi,
-    gayaHidup: document.getElementById('gayaHidup').value,
-    gayaBenda: document.getElementById('gayaBenda').value,
-    framing: document.getElementById('framing').value,
-    lighting: document.getElementById('lighting').value,
-    mood: document.getElementById('mood').value,
-    detail: document.getElementById('detail').value
-  };
-}
+/* =========================================================================
+   KATALOG
+   Setiap opsi: [id, label, teksIndonesia, teksInggris]
+   - label      : yang dilihat user (singkat)
+   - teks ID/EN : frasa yang masuk ke prompt
+   Model image generator dilatih dominan dari caption berbahasa Inggris,
+   jadi output EN biasanya jauh lebih konsisten hasilnya.
+   ========================================================================= */
+const CATALOG = {
+  gayaHidup: {
+    label: 'gaya karakter',
+    groups: [
+      ['Animasi & kartun', [
+        ['anime','Anime','gaya anime Jepang, mata besar dan garis tegas','Japanese anime style, large expressive eyes, crisp bold linework'],
+        ['chibi','Chibi','gaya chibi, tubuh kecil kepala besar, ekspresi lucu','chibi style, small body with an oversized head, cute exaggerated expression'],
+        ['ghibli','Studio Ghibli','terinspirasi Studio Ghibli, suasana hangat dan detail alam','Studio Ghibli inspired, warm atmosphere and lush hand-painted nature detail'],
+        ['pixar','Pixar','animasi 3D ala Pixar, warna cerah dan proporsi lucu','Pixar-style 3D animation, bright colors and appealing stylized proportions'],
+        ['disney','Disney','gaya animasi Disney, mata ekspresif dan gerakan lembut','Disney animation style, expressive eyes and soft fluid motion'],
+        ['dreamworks','DreamWorks','gaya DreamWorks, karakter kartun ekspresif dan dinamis','DreamWorks style, expressive and dynamic cartoon character'],
+        ['fortnite','Fortnite cartoon','gaya Fortnite, kartun stylized cerah','Fortnite style, bright stylized game cartoon'],
+        ['roblox','Roblox','gaya avatar Roblox, bentuk blok sederhana','Roblox avatar style, simple blocky shapes'],
+        ['storybook','Storybook','gaya storybook, ilustrasi buku anak yang hangat','storybook style, warm children’s book illustration'],
+        ['fairytale','Fairytale','dunia dongeng fairytale, magis dan lembut','fairytale world, magical and soft']
+      ]],
+      ['Komik & gambar tangan', [
+        ['comic','Comic book','gaya panel komik, garis tebal dan efek dot shading','comic book panel style, bold inked lines and halftone dot shading'],
+        ['manga','Manga cover','gaya cover manga, komposisi dramatis hitam-putih dan aksen bold','manga cover style, dramatic black and white composition with bold accents'],
+        ['watercolor','Watercolor','digambar dengan gaya watercolor, warna lembut menyatu','watercolor painting, soft bleeding washes of color'],
+        ['oil','Oil painting','gaya oil painting, sapuan kuas tebal dan tekstur kanvas terlihat','oil painting, thick impasto brushstrokes and visible canvas texture'],
+        ['charcoal','Charcoal','sketsa charcoal, garis kasar hitam-putih dengan bayangan tegas','charcoal sketch, rough black and white strokes with bold shading'],
+        ['pencil','Pencil sketch','sketsa pensil tangan, arsiran halus dan garis konstruksi terlihat','hand-drawn pencil sketch, fine hatching and visible construction lines'],
+        ['ink','Ink drawing','ilustrasi tinta hitam, kontras tajam dan garis yakin','black ink illustration, sharp contrast and confident linework'],
+        ['doodle','Doodle','gaya doodle, goresan iseng yang playful','doodle style, playful casual scribbles'],
+        ['lineart','Line art','line art sederhana, outline bersih tanpa shading rumit','simple line art, clean outlines with minimal shading'],
+        ['graffiti','Graffiti','gaya graffiti, cat semprot di dinding kota','graffiti style, spray paint on an urban wall'],
+        ['popart','Pop art','gaya pop art ala Warhol, warna mencolok dan repetisi','Warhol-style pop art, bold flat colors and repetition'],
+        ['cubism','Cubism','gaya kubisme, wajah terpecah jadi bidang geometris','cubist style, face fractured into geometric planes'],
+        ['surreal','Surreal','lukisan surealis, logika mimpi dan bentuk mustahil','surrealist painting, dream logic and impossible forms'],
+        ['expressionism','Expressionism','ekspresionisme, emosi kuat lewat warna dan goresan kasar','expressionism, intense emotion through raw color and gestural strokes']
+      ]],
+      ['Era & suasana', [
+        ['renaissance','Renaissance','gaya renaissance, cahaya klasik Eropa dan proporsi ideal','Renaissance style, classical European lighting and idealized proportions'],
+        ['baroque','Baroque','gaya baroque, dramatis, kaya detail dan kontras cahaya','Baroque style, dramatic, richly detailed with strong light contrast'],
+        ['gothic','Gothic','atmosfer gothic, gelap, runcing, dan monumental','gothic atmosphere, dark, pointed and monumental'],
+        ['noir','Film noir','gaya film noir, hitam-putih dengan kontras dramatis','film noir style, black and white with dramatic contrast'],
+        ['vintage90s','Vintage 90s','nuansa vintage 90-an, warna pudar dan grain film','vintage 1990s look, faded colors and film grain'],
+        ['y2k','Y2K','estetika Y2K, krom, plastik mengkilap, dan futuristik awal 2000-an','Y2K aesthetic, chrome, glossy plastic and early-2000s futurism'],
+        ['vaporwave','Vaporwave','gaya vaporwave, gradasi pink-ungu-biru neon','vaporwave style, neon pink, purple and blue gradients'],
+        ['synthwave','Synthwave','synthwave, langit matahari terbenam neon dan grid','synthwave, neon sunset sky and glowing grid']
+      ]],
+      ['Mainan & figur', [
+        ['claymation','Claymation','gaya claymation, tekstur clay dengan jejak jari terlihat','claymation style, clay texture with visible fingerprints'],
+        ['lego','LEGO minifig','karakter dari bata LEGO, sendi minifigure terlihat','built from LEGO bricks, visible minifigure joints'],
+        ['funko','Funko Pop','gaya Funko Pop, kepala besar, mata hitam, tubuh kecil','Funko Pop style, oversized head, solid black eyes, small body'],
+        ['actionfigure','Action figure','action figure koleksi, sendi articulated dan kemasan display','collectible action figure, articulated joints and display packaging'],
+        ['puppet','Wooden puppet','boneka kayu puppet, sendi terlihat dan permukaan dicat','wooden puppet, visible joints and painted surface'],
+        ['felt','Felt character','karakter dari kain felt, tepi jahitan terlihat','felt fabric character, visible stitched edges'],
+        ['knit','Knitted / crochet','karakter rajutan benang, tekstur knits jelas','knitted yarn character, clear crochet texture']
+      ]],
+      ['Pixel & game', [
+        ['pixelart','Pixel art','pixel art 8-bit, palet terbatas dan dithering','8-bit pixel art, limited palette and dithering'],
+        ['pixelportrait','Pixel portrait','potret pixel, wajah blocky dengan palet retro','pixel portrait, blocky face with a retro palette'],
+        ['lowpoly','Low poly','model 3D low poly, facet geometris terlihat','low poly 3D model, visible geometric facets'],
+        ['voxel','Voxel','dunia voxel, tubuh tersusun kubus kecil','voxel world, body built from small cubes'],
+        ['minecraft','Minecraft','gaya Minecraft, karakter blocky dan tekstur kasar','Minecraft style, blocky character and coarse textures'],
+        ['ps1','PS1','grafis PlayStation 1, tekstur rendah dan vertex wobble','PlayStation 1 graphics, low-res textures and vertex wobble'],
+        ['gameboy','Game Boy','tampilan layar Game Boy, hijau monokrom dan piksel kasar','Game Boy screen look, monochrome green and chunky pixels']
+      ]],
+      ['Tema karakter', [
+        ['cyberpunk','Cyberpunk','suasana cyberpunk, lampu neon dan kota padat futuristik','cyberpunk setting, neon lights and a dense futuristic city'],
+        ['steampunk','Steampunk','gaya steampunk, mesin uap dan gir tembaga era Victorian','steampunk style, steam machinery and Victorian brass gears'],
+        ['samurai','Samurai','prajurit samurai, baju zirah tradisional Jepang','samurai warrior, traditional Japanese armor'],
+        ['ninja','Ninja','ninja, siluet gelap dan gerakan diam-diam','ninja, dark silhouette and stealthy posture'],
+        ['viking','Viking','pejuang viking, bulu, zirah kulit, dan nuansa Nordik','viking warrior, furs, leather armor and Nordic mood'],
+        ['medieval','Medieval fantasy','dunia fantasi abad pertengahan, kastil dan baju zirah','medieval fantasy world, castles and plate armor'],
+        ['elf','Elf','karakter elf elegan, ciri khas telinga runcing dan kain ringan','elegant elf character, pointed ears and flowing light fabric'],
+        ['wizard','Wizard','penyihir, jubah, tongkat, dan aura sihir','wizard, robes, staff and a glowing magical aura'],
+        ['mythology','Mythology','gaya mitologi, dewa dan makhluk legenda','mythological style, gods and legendary creatures'],
+        ['robot','Robot','karakter robot humanoid dengan panel mekanis','humanoid robot character with mechanical panels'],
+        ['mecha','Mecha','mecha raksasa, zirah plat dan sendi hidrolik','giant mecha, armor plating and hydraulic joints'],
+        ['cyborg','Cyborg','cyborg, daging manusia menyatu dengan mesin','cyborg, human flesh fused with machinery'],
+        ['photoreal','Photorealistic','fotorealistik, terlihat seperti foto sungguhan','photorealistic, indistinguishable from a real photograph'],
+        ['cinematic','Cinematic','frame sinematik, grading film dan komposisi movie-like','cinematic frame, film color grading and movie-like composition']
+      ]]
+    ]
+  },
 
-function buildPrompt(){
-  const d = collect();
-  let segments = [];
+  gayaBenda: {
+    label: 'gaya objek',
+    groups: [
+      ['Teknik & desain', [
+        ['blueprint','Blueprint','gambar teknik blueprint, garis putih di kertas biru','technical blueprint drawing, white lines on blue paper'],
+        ['isometric','Isometric','ilustrasi isometrik, sudut 3D miring yang rapi','isometric illustration, clean angled 3D projection'],
+        ['architecture','Architecture','gaya arsitektur, render bangunan yang bersih dan presisi','architectural style, clean and precise building render'],
+        ['interior','Interior','desain interior ruangan, tata letak dan material jelas','interior design render, clear layout and materials'],
+        ['scifiroom','Sci-fi room','ruangan sci-fi, panel, cahaya strip, dan permukaan steril','sci-fi interior, panels, light strips and sterile surfaces'],
+        ['flat','Flat design','flat design modern, bentuk datar dan warna solid','modern flat design, flat shapes and solid colors'],
+        ['minimal','Minimal','desain minimal, sedikit elemen dan ruang kosong luas','minimal design, few elements and generous empty space'],
+        ['glass','Glassmorphism','glassmorphism, kaca buram dan highlight lembut','glassmorphism, frosted glass and soft highlights'],
+        ['brutalist','Brutalist','gaya brutalist, beton mentah dan bentuk berat','brutalist style, raw concrete and heavy forms'],
+        ['bauhaus','Bauhaus','bauhaus, geometri sederhana dan warna primer','Bauhaus, simple geometry and primary colors'],
+        ['artdeco','Art deco','art deco, garis elegan, simetri, dan kemewahan geometris','art deco, elegant lines, symmetry and geometric luxury'],
+        ['memphis','Memphis','memphis design, pola 80-an yang cerah dan playful','Memphis design, bright and playful 1980s patterns']
+      ]],
+      ['Foto & produk', [
+        ['productshot','Product shot','foto produk profesional, studio, highlight bersih','professional product photography, studio setup, clean highlights'],
+        ['macro','Macro','foto makro, detail ekstrem permukaan benda','macro photography, extreme surface detail'],
+        ['fisheye','Fisheye','lensa fisheye, distorsi lebar yang dramatis','fisheye lens, dramatic wide distortion'],
+        ['droneview','Drone view','tampilan drone dari udara, komposisi aerial','aerial drone view, overhead composition'],
+        ['hdr','HDR','HDR, rentang terang-gelap yang lebar dan tajam','HDR, wide and sharp dynamic range'],
+        ['polaroid','Polaroid','foto polaroid, bingkai putih dan warna sedikit faded','polaroid photo, white frame and slightly faded colors']
+      ]],
+      ['Material & patung', [
+        ['marble','Marble','patung marmer putih, permukaan halus mengkilap','white marble sculpture, smooth polished surface'],
+        ['bronze','Bronze','patung perunggu, patina gelap dan highlight logam','bronze sculpture, dark patina and metallic highlights'],
+        ['ceramic','Ceramic','keramik mengkilap, glaze halus dan tepi buatan tangan','glossy ceramic, smooth glaze and handmade edges'],
+        ['porcelain','Porcelain','porselen halus, putih tembus cahaya','fine porcelain, translucent white'],
+        ['crystal','Crystal','kristal transparan, bias cahaya dan facet tajam','transparent crystal, light refraction and sharp facets'],
+        ['diamond','Diamond','permukaan berlian, kilau tajam dan refraksi pelangi','diamond surface, sharp sparkle and rainbow refraction'],
+        ['gold','Gold luxury','finishing emas mewah, reflect emas yang kaya','luxurious gold finish, rich golden reflections'],
+        ['chrome','Silver chrome','logam chrome perak, pantulan mirror-like','silver chrome metal, mirror-like reflections'],
+        ['rusted','Rusted metal','logam berkarat, tekstur kasar dan warna oksida','rusted metal, rough texture and oxide coloring'],
+        ['copper','Oxidized copper','tembaga teroksidasi, hijau patina','oxidized copper, green patina'],
+        ['woodcarving','Wood carving','ukiran kayu, urat kayu dan bekas pahat terlihat','wood carving, visible grain and chisel marks'],
+        ['icecarve','Ice carving','patung es, transparan, retak halus, dan dingin','ice sculpture, transparent with fine cracks and a cold tone'],
+        ['glassart','Glass art','kaca artistik, tebal, pantulan, dan caustics','art glass, thick and reflective with light caustics'],
+        ['holographic','Holographic','permukaan holografik, kilau pelangi yang bergeser','holographic surface, shifting rainbow sheen'],
+        ['iridescent','Iridescent','iridescent, warna berubah sesuai sudut pandang','iridescent, color shifting with viewing angle']
+      ]],
+      ['Kertas & kerajinan', [
+        ['origami','Origami','bentuk origami kertas terlipat, sudut tajam geometris','folded paper origami, sharp geometric creases'],
+        ['papercut','Papercut','seni potongan kertas berlapis, bayangan antar lapis','layered papercut art, shadows between the layers'],
+        ['quilling','Quilling','quilling, gulungan kertas berwarna yang rapat','paper quilling, tight coils of colored paper'],
+        ['embroidery','Embroidery','sulaman embroidery, benang dan tusukan rapi','embroidery, neat thread and stitching'],
+        ['mosaic','Mosaic','mosaik ubin, pecahan warna tersusun rapat','tile mosaic, tightly set colored fragments'],
+        ['mandala','Mandala','pola mandala, simetri radial yang rumit','mandala pattern, intricate radial symmetry']
+      ]],
+      ['Branding & cetak', [
+        ['movieposter','Movie poster','poster film, judul besar dan komposisi ikonik','movie poster, large title treatment and iconic composition'],
+        ['magazine','Magazine cover','cover majalah, tipografi editorial dan foto utama','magazine cover, editorial typography and a hero photo'],
+        ['album','Album cover','cover album musik, komposisi square yang kuat','music album cover, strong square composition'],
+        ['sticker','Sticker','desain stiker, outline tebal dan siap dipotong','sticker design, thick outline, die-cut ready'],
+        ['emblem','Emblem','emblem premium, perisai, pita, dan detail heraldik','premium emblem, shield, ribbon and heraldic detail'],
+        ['logo','Logo','logo mark yang bersih dan mudah diingat','clean and memorable logo mark'],
+        ['appicon','App icon','ikon aplikasi, bentuk sederhana di dalam rounded square','app icon, simple shape inside a rounded square'],
+        ['tradingcard','Trading card','trading card, bingkai koleksi dan stats panel','trading card, collectible frame and stats panel'],
+        ['mapillo','Map illustration','peta ilustrasi, kompas, dan label tempat','illustrated map, compass rose and place labels']
+      ]],
+      ['Teknologi & objek scene', [
+        ['wireframe','Wireframe','wireframe 3D, garis tepi objek tanpa tekstur','3D wireframe, edge lines with no textures'],
+        ['hud','Sci-fi HUD','tampilan HUD sci-fi, overlay data dan reticle','sci-fi HUD, data overlays and a targeting reticle'],
+        ['neonui','Neon UI','antarmuka neon, tombol dan panel menyala','neon interface, glowing buttons and panels'],
+        ['terminal','Hacker terminal','terminal hacker, teks hijau di layar gelap','hacker terminal, green text on a dark screen'],
+        ['spaceship','Spaceship','pesawat ruang angkasa, hull, antenna, dan thruster','spaceship, hull plating, antennae and thrusters'],
+        ['timemachine','Time machine','mesin waktu, cincin, panel kuno, dan cahaya portal','time machine, rings, antique panels and portal glow'],
+        ['steammachine','Steam machinery','mesin uap kompleks, pipa, katup, dan manometer','complex steam machinery, pipes, valves and pressure gauges']
+      ]]
+    ]
+  },
 
-  let subjParts = [d.objek, d.atribut, d.ekspresi].filter(Boolean);
-  if(subjParts.length){
-    segments.push({text: subjParts.join(', '), color: 'var(--c1)'});
+  framing: {
+    label: 'framing',
+    groups: [
+      ['Jarak kamera', [
+        ['ecu','Extreme close-up','extreme close-up, hanya detail kecil yang mengisi frame','extreme close-up, a single small detail filling the frame'],
+        ['cu','Close-up','close-up wajah, detail ekspresi terlihat jelas','close-up on the face, expression detail clearly visible'],
+        ['ms','Medium shot','medium shot setengah badan, latar sedikit terlihat','medium shot from the waist up, background partly visible'],
+        ['full','Full body','full body shot, seluruh tubuh terlihat dari kepala sampai kaki','full body shot, head to toe in frame'],
+        ['wide','Wide shot / long shot','wide shot, subjek kecil di tengah pemandangan luas','wide shot, a small subject within a vast landscape'],
+        ['establishing','Establishing shot','establishing shot, memperkenalkan lokasi secara luas','establishing shot, introducing the location broadly']
+      ]],
+      ['Sudut kamera', [
+        ['eyelevel','Eye level','eye-level shot, kamera sejajar mata subjek','eye-level shot, camera at the subject’s eye height'],
+        ['low','Low angle','low angle shot, kamera dari bawah membuat subjek terlihat megah','low angle shot, camera below making the subject look imposing'],
+        ['high','High angle','high angle shot, kamera dari atas membuat subjek terlihat kecil','high angle shot, camera above making the subject look small'],
+        ['birds','Bird’s eye view','diambil dari bird’s eye view, terlihat dari atas lurus ke bawah','bird’s eye view, looking straight down from above'],
+        ['worms','Worm’s eye view','worm’s eye view, dari tanah menatap ke atas','worm’s eye view, looking up from ground level'],
+        ['dutch','Dutch angle','dutch angle, frame miring yang menimbulkan keresahan','dutch angle, tilted frame creating unease'],
+        ['aerial','Aerial / drone','tampilan drone aerial, komposisi dari udara','aerial drone view, composition from the air']
+      ]],
+      ['Komposisi', [
+        ['thirds','Rule of thirds','komposisi rule of thirds, subjek diposisikan di sepertiga frame','rule of thirds composition, subject placed on a third'],
+        ['centered','Centered / symmetrical','komposisi simetris, subjek tepat di tengah dan seimbang','symmetrical composition, subject perfectly centered and balanced'],
+        ['framewithin','Frame within a frame','frame within a frame, subjek dikurung pintu, jendela, atau lengkungan','frame within a frame, subject framed by a door, window or arch'],
+        ['leading','Leading lines','leading lines, garis-garis mengarah ke subjek utama','leading lines drawing the eye to the main subject'],
+        ['negspace','Negative space','negative space luas, subjek kecil dengan ruang kosong yang kuat','generous negative space, a small subject against strong emptiness'],
+        ['ots','Over-the-shoulder','over-the-shoulder shot, dari belakang bahu seseorang melihat ke depan','over-the-shoulder shot, looking past someone’s shoulder'],
+        ['pov','POV','POV shot, seolah dilihat langsung dari mata subjek','POV shot, seen directly through the subject’s eyes'],
+        ['two','Two-shot','two-shot, dua subjek berbagi frame','two-shot, two subjects sharing the frame'],
+        ['profile','Side profile','profil samping, siluet atau wajah dari sisi','side profile, silhouette or face seen from the side'],
+        ['behind','From behind','tampak belakang subjek, tidak menghadap kamera','seen from behind, subject facing away from the camera']
+      ]]
+    ]
+  },
+
+  lighting: {
+    label: 'pencahayaan',
+    groups: [
+      ['Waktu & alam', [
+        ['golden','Golden hour','pencahayaan golden hour, cahaya oranye hangat menyinari dari samping','golden hour lighting, warm orange light raking in from the side'],
+        ['bluehour','Blue hour','blue hour lighting, cahaya biru dingin sesaat sebelum gelap total','blue hour lighting, cool blue light just before full dark'],
+        ['midday','Harsh midday sun','cahaya matahari tengah hari yang keras, bayangan pendek dan tajam','harsh midday sun, short hard shadows'],
+        ['overcast','Overcast / diffused','cahaya overcast, lembut merata tanpa bayangan tegas','overcast light, soft and even with no hard shadows'],
+        ['moonlight','Moonlight','cahaya bulan, pucat keperakan di malam hari','moonlight, pale silver night illumination'],
+        ['godrays','God rays / volumetric','god rays volumetrik, berkas cahaya menembus debu atau kabut','volumetric god rays, light shafts cutting through dust or fog'],
+        ['aurora','Aurora light','aurora, langit hijau-ungu yang memantul ke subjek','aurora light, green and purple sky reflecting onto the subject']
+      ]],
+      ['Studio & dramatis', [
+        ['soft','Soft studio light','soft studio light, cahaya merata tanpa bayangan tajam','soft studio lighting, even light with no harsh shadows'],
+        ['ring','Ring light','ring light, catchlight bundar di mata dan wajah merata','ring light, circular catchlight in the eyes and evenly lit face'],
+        ['rembrandt','Rembrandt','Rembrandt lighting, segitiga cahaya kecil di pipi yang teduh','Rembrandt lighting, a small triangle of light on the shadowed cheek'],
+        ['rim','Rim light','rim light, garis cahaya di tepi siluet subjek','rim light, a bright edge tracing the subject’s silhouette'],
+        ['backlit','Backlit / silhouette','backlit, siluet gelap dengan cahaya terang dari belakang','backlit, dark silhouette against bright light from behind'],
+        ['dramatic','Dramatic shadow','dramatic shadow lighting, kontras tinggi antara terang dan gelap','dramatic shadow lighting, high contrast between light and dark'],
+        ['chiaroscuro','Chiaroscuro','chiaroscuro, gelap pekat dengan satu sumber cahaya kuat','chiaroscuro, deep darkness with a single strong light source'],
+        ['spotlight','Spotlight','spotlight, satu titik cahaya mengisolasi subjek dari gelap','spotlight, a single pool of light isolating the subject from darkness']
+      ]],
+      ['Sumber khusus', [
+        ['candle','Candlelight','cahaya candlelight, hangat redup dan berkedip lembut','candlelight, dim warm glow with a soft flicker'],
+        ['neon','Neon glow','diterangi neon glow warna pink dan biru dari papan reklame','lit by pink and blue neon glow from signage'],
+        ['campfire','Campfire','cahaya api unggun, oranye berkedip dari bawah','campfire light, flickering orange from below'],
+        ['lightning','Lightning flash','kilat petir sekejap, freeze motion yang keras','a split-second lightning flash, harsh frozen motion'],
+        ['fluorescent','Fluorescent','cahaya fluorescent kehijauan, nuansa kantor atau ruang bawah tanah','greenish fluorescent light, office or basement mood'],
+        ['practical','Practical lights','practical lights, lampu yang terlihat di dalam scene sebagai sumber','practical lights, visible in-scene lamps as the light source'],
+        ['screen','Screen glow','cahaya layar monitor, biru dingin menyinari wajah di gelap','monitor screen glow, cold blue light on the face in darkness'],
+        ['biolum','Bioluminescent','bioluminescent, cahaya organik yang memancar dari dalam','bioluminescent, organic light emitted from within']
+      ]]
+    ]
+  },
+
+  mood: {
+    label: 'mood',
+    groups: [
+      ['Tenang & hangat', [
+        ['serene','Tenang / serene','suasana tenang dan damai, tanpa ketegangan','calm and peaceful atmosphere, no tension'],
+        ['cozy','Cozy / warm','suasana cozy dan hangat, aman seperti di rumah','cozy warm atmosphere, safe and homely'],
+        ['nostalgic','Nostalgic','nuansa nostalgic, mengingatkan pada kenangan masa lalu','nostalgic mood, evoking memories of the past'],
+        ['romantic','Romantis','suasana romantis, lembut dan intim','romantic atmosphere, soft and intimate'],
+        ['playful','Ceria / playful','suasana ceria dan playful, warna-warni dan ringan','cheerful and playful atmosphere, colorful and light'],
+        ['whimsical','Whimsical','whimsical, ajaib ringan dan sedikit nakal','whimsical, lightly magical and mischievous'],
+        ['dreamy','Dreamy','dreamy, seperti mimpi yang kabur dan lembut','dreamy, hazy and soft like a dream']
+      ]],
+      ['Gelap & tegang', [
+        ['tense','Tegang / tense','atmosfer tegang, seolah ada yang mengintai','tense atmosphere, as if something is lurking'],
+        ['mysterious','Misterius','atmosfer misterius, banyak bayangan dan sudut gelap','mysterious atmosphere, deep shadows and dark corners'],
+        ['horror','Horror / eerie','nuansa horror, uncanny dan menakutkan','horror mood, uncanny and frightening'],
+        ['melancholy','Melankolis','nuansa melankolis, sendu dan reflektif','melancholic mood, wistful and reflective'],
+        ['lonely','Kesepian / isolated','kesepian, subjek terisolasi di ruang yang luas','lonely, subject isolated in a vast space'],
+        ['apocalyptic','Apokaliptik','suasana apokaliptik, runtuh dan sunyi setelah bencana','apocalyptic atmosphere, ruined and silent after disaster'],
+        ['aggressive','Agresif','agresif, energi kasar dan konfrontatif','aggressive, raw and confrontational energy']
+      ]],
+      ['Besar & spekulatif', [
+        ['epic','Megah / epic','suasana megah dan epic, skala besar dan dramatis','grand epic atmosphere, vast scale and drama'],
+        ['heroic','Heroik','heroik, kemenangan dan keberanian','heroic, triumph and courage'],
+        ['futuristic','Futuristik','suasana futuristik, dingin dan penuh teknologi','futuristic atmosphere, cold and technology-dense'],
+        ['clinical','Klinis / cold','klinis dan dingin, steril seperti laboratorium','clinical and cold, sterile like a laboratory'],
+        ['sacred','Sakral / spiritual','sakral, khidmat, dan spiritual','sacred, solemn and spiritual'],
+        ['triumphant','Triumphant','triumphant, puncak kemenangan yang menyala','triumphant, a blazing peak of victory']
+      ]]
+    ]
+  },
+
+  detail: {
+    label: 'detail teknis',
+    groups: [
+      ['Tekstur & material', [
+        ['rusty','Tekstur berkarat / kasar','tekstur permukaan berkarat dan kasar','rusted and rough surface texture'],
+        ['glossy','Tekstur mengkilap halus','permukaan mengkilap halus','smooth glossy surface'],
+        ['oldmetal','Material logam tua','material dominan logam tua','predominantly aged metal material'],
+        ['wood','Material kayu','terbuat dari kayu dengan urat kayu terlihat jelas','made of wood with clearly visible grain'],
+        ['glassmat','Material kaca','permukaan kaca atau transparan dengan caustics','glass or transparent surface with light caustics'],
+        ['fabric','Tekstur kain','kain dengan weave dan lipatan yang jelas','fabric with visible weave and folds'],
+        ['leather','Tekstur leather','kulit atau leather aus, retak halus dan kilau minyak','worn leather, fine cracks and an oily sheen'],
+        ['wet','Wet skin / wet surface','kulit basah, keringat atau hujan terlihat di permukaan','wet skin, sweat or rain visible on the surface']
+      ]],
+      ['Warna', [
+        ['mono','Palet monokrom','palet warna monokrom hitam-putih','monochrome black and white palette'],
+        ['warm','Palet warna hangat','warna hangat dominan oranye dan merah','warm palette dominated by orange and red'],
+        ['cool','Palet warna dingin','palet dingin, biru dan teal yang tenang','cool palette, calm blues and teals'],
+        ['complementary','Palet kontras komplementer','palet complementary yang kontras tajam','complementary palette with sharp contrast'],
+        ['muted','Muted / desaturated','warna muted, desaturasi halus seperti film lama','muted colors, gently desaturated like old film'],
+        ['neonpal','Palet neon','warna neon menyala di atas latar gelap','glowing neon colors on a dark background']
+      ]],
+      ['Ketajaman & lensa', [
+        ['ultradetail','Ultra-detail','ultra-detail, setiap tekstur terlihat tajam','ultra-detailed, every texture sharply resolved'],
+        ['minimalclean','Minimal / clean','gaya minimal, sedikit detail dan clean','minimal style, few details and clean'],
+        ['eightk','Rendering 8K, sharp focus','rendering 8K, sharp focus','8K render, sharp focus'],
+        ['dof','Depth of field / bokeh','depth of field, background blur lembut','shallow depth of field, soft background blur'],
+        ['tiltshift','Tilt-shift','tilt-shift, seolah dunia miniatur dengan fokus sempit','tilt-shift, miniature-world effect with a narrow focal band'],
+        ['motionblur','Motion blur','motion blur halus pada elemen yang bergerak','subtle motion blur on moving elements'],
+        ['longexposure','Long exposure','long exposure, jejak cahaya dan air yang sutra','long exposure, light trails and silky water'],
+        ['grain','Film grain','film grain terlihat, tekstur analog','visible film grain, analog texture'],
+        ['chromatic','Chromatic aberration','chromatic aberration tipis di tepi frame','slight chromatic aberration at the frame edges'],
+        ['flare','Lens flare','lens flare sinematik dari sumber cahaya terang','cinematic lens flare from a bright light source']
+      ]]
+    ]
   }
-  if(d.gayaHidup) segments.push({text: d.gayaHidup, color: 'var(--c2)'});
-  if(d.gayaBenda) segments.push({text: d.gayaBenda, color: 'var(--c2)'});
-  if(d.framing) segments.push({text: d.framing, color: 'var(--c3)'});
-  if(d.lighting) segments.push({text: d.lighting, color: 'var(--c4)'});
-  if(d.mood) segments.push({text: d.mood, color: 'var(--c5)'});
-  if(d.detail) segments.push({text: d.detail, color: 'var(--c6)'});
+};
 
-  const box = document.getElementById('promptBox');
+/* Preset: mengisi elemen 2–6 + rasio. Subjek sengaja dibiarkan kosong. */
+const PRESETS = [
+  { name:'Potret sinematik', mode:'hidup', gayaHidup:'cinematic',   framing:'cu',       lighting:'rembrandt', mood:'melancholy',  detail:'dof',            ratio:'4:5'  },
+  { name:'Foto produk',      mode:'benda', gayaBenda:'productshot', framing:'centered', lighting:'soft',      mood:'clinical',    detail:'ultradetail',    ratio:'1:1'  },
+  { name:'Karakter game',    mode:'hidup', gayaHidup:'cyberpunk',   framing:'full',     lighting:'neon',      mood:'futuristic',  detail:'neonpal',        ratio:'9:16' },
+  { name:'Poster film',      mode:'benda', gayaBenda:'movieposter', framing:'low',      lighting:'dramatic',  mood:'epic',        detail:'complementary',  ratio:'2:3'  },
+  { name:'Ilustrasi anak',   mode:'hidup', gayaHidup:'storybook',   framing:'ms',       lighting:'golden',    mood:'cozy',        detail:'minimalclean',   ratio:'3:2'  },
+  { name:'Horor',            mode:'hidup', gayaHidup:'photoreal',   framing:'dutch',    lighting:'candle',    mood:'horror',      detail:'grain',          ratio:'16:9' }
+];
 
-  if(segments.length === 0){
+/* =========================================================================
+   SUMBER TUNGGAL DAFTAR FIELD
+   Menambah field cukup di sini — collect, reset, restore, dan simpan
+   semuanya ikut otomatis.
+   ========================================================================= */
+const PICKERS = ['gayaHidup','gayaBenda','framing','lighting','mood','detail'];
+const TEXT_FIELDS = [
+  ['objek','subjObjek'], ['atribut','subjAtribut'], ['ekspresi','subjEkspresi'], ['subjExtra','subjExtra'],
+  ['gayaExtra','gayaExtra'], ['framingExtra','framingExtra'], ['lightingExtra','lightingExtra'],
+  ['moodExtra','moodExtra'], ['detailExtra','detailExtra'], ['negative','negative']
+];
+const SELECT_FIELDS = [['target','target'], ['ratio','ratio']];
+const MOUNTS = {
+  gayaHidup:'cbxGayaHidup', gayaBenda:'cbxGayaBenda', framing:'cbxFraming',
+  lighting:'cbxLighting', mood:'cbxMood', detail:'cbxDetail'
+};
+
+const LS_STATE = 'wahanalab.pb.v1.state';
+const LS_HIST  = 'wahanalab.pb.v1.history';
+
+function defaultState(){
+  const s = { mode:'hidup', lang:'id', target:'chatgpt', ratio:'' };
+  PICKERS.forEach(k => s[k] = '');
+  TEXT_FIELDS.forEach(([k]) => s[k] = '');
+  return s;
+}
+let state = defaultState();
+const combos = {};
+const $ = id => document.getElementById(id);
+
+/* ---------- util ---------- */
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+function findItem(catKey, id){
+  if(!id) return null;
+  const groups = CATALOG[catKey].groups;
+  for(let g=0; g<groups.length; g++){
+    const items = groups[g][1];
+    for(let i=0; i<items.length; i++) if(items[i][0] === id) return items[i];
+  }
+  return null;
+}
+function textOf(catKey, id, lang){
+  const it = findItem(catKey, id);
+  return it ? (lang === 'en' ? it[3] : it[2]) : '';
+}
+function labelOf(catKey, id){
+  const it = findItem(catKey, id);
+  return it ? it[1] : '';
+}
+function allItems(catKey){
+  return CATALOG[catKey].groups.reduce((acc,g) => acc.concat(g[1]), []);
+}
+
+let toastTimer = null;
+function toast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* Salin ke clipboard dengan fallback.
+   navigator.clipboard hanya tersedia di secure context (https / localhost / file),
+   jadi jalur execCommand tetap dipertahankan agar halaman ini tetap berfungsi
+   kalau dibuka lewat http biasa di jaringan lokal. */
+async function copyText(text){
+  if(!text) return false;
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  }catch(e){ /* lanjut ke fallback */ }
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly','');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, ta.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){ return false; }
+}
+function flashBtn(btn, okText, ok){
+  const original = btn.dataset.label || btn.textContent;
+  btn.dataset.label = original;
+  btn.textContent = ok ? okText : 'Gagal menyalin';
+  btn.classList.add(ok ? 'copied' : 'failed');
+  setTimeout(() => {
+    btn.textContent = original;
+    btn.classList.remove('copied','failed');
+  }, 1600);
+}
+
+/* =========================================================================
+   COMBOBOX — select yang bisa dicari, dengan dukungan keyboard penuh
+   ========================================================================= */
+function createCombobox(catKey){
+  const cat  = CATALOG[catKey];
+  const host = $(MOUNTS[catKey]);
+  const listId = 'list-' + catKey;
+
+  host.innerHTML =
+    '<div class="cbx">' +
+      '<button type="button" class="cbx-trigger is-empty" aria-haspopup="listbox" aria-expanded="false">' +
+        '— pilih ' + esc(cat.label) + ' —' +
+      '</button>' +
+      '<button type="button" class="cbx-clear" hidden aria-label="Kosongkan ' + esc(cat.label) + '">&times;</button>' +
+      '<div class="cbx-panel" hidden>' +
+        '<input type="text" class="cbx-search" role="combobox" aria-autocomplete="list" aria-expanded="true" ' +
+               'aria-controls="' + listId + '" placeholder="Cari ' + esc(cat.label) + '…" ' +
+               'aria-label="Cari ' + esc(cat.label) + '">' +
+        '<div class="cbx-list" id="' + listId + '" role="listbox" aria-label="' + esc(cat.label) + '"></div>' +
+      '</div>' +
+    '</div>';
+
+  const root    = host.firstElementChild;
+  const trigger = root.querySelector('.cbx-trigger');
+  const clearBt = root.querySelector('.cbx-clear');
+  const panel   = root.querySelector('.cbx-panel');
+  const search  = root.querySelector('.cbx-search');
+  const list    = root.querySelector('.cbx-list');
+
+  let visible = [];   // elemen <div role="option"> yang sedang tampil
+  let active  = -1;
+
+  function optId(id){ return listId + '-opt-' + id; }
+
+  function renderList(query){
+    const q = (query || '').trim().toLowerCase();
+    let html = '';
+    cat.groups.forEach(function(g){
+      const name = g[0];
+      const hits = g[1].filter(function(it){
+        if(!q) return true;
+        return (it[1] + ' ' + it[2] + ' ' + it[3]).toLowerCase().indexOf(q) !== -1;
+      });
+      if(!hits.length) return;
+      html += '<div class="cbx-group">' + esc(name) + '</div>';
+      hits.forEach(function(it){
+        const sel = state[catKey] === it[0];
+        html += '<div class="cbx-opt" role="option" id="' + optId(it[0]) + '" data-id="' + it[0] + '" ' +
+                'aria-selected="' + (sel ? 'true' : 'false') + '">' +
+                  '<span>' + esc(it[1]) + '</span>' +
+                  '<span class="hint">' + esc(it[2].split(',')[0]) + '</span>' +
+                '</div>';
+      });
+    });
+    list.innerHTML = html || '<div class="cbx-empty">Nggak ada yang cocok dengan “' + esc(query) + '”.</div>';
+    visible = Array.prototype.slice.call(list.querySelectorAll('.cbx-opt'));
+
+    const selIdx = visible.findIndex(function(el){ return el.dataset.id === state[catKey]; });
+    setActive(selIdx >= 0 ? selIdx : (visible.length ? 0 : -1), false);
+  }
+
+  function setActive(i, scroll){
+    if(active >= 0 && visible[active]) visible[active].classList.remove('active');
+    active = i;
+    if(active >= 0 && visible[active]){
+      const el = visible[active];
+      el.classList.add('active');
+      search.setAttribute('aria-activedescendant', el.id);
+      if(scroll !== false) el.scrollIntoView({ block:'nearest' });
+    }else{
+      search.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  function open(){
+    if(!panel.hidden) return;
+    panel.hidden = false;
+    trigger.setAttribute('aria-expanded','true');
+    search.value = '';
+    renderList('');
+    search.focus();
+  }
+  function close(refocus){
+    if(panel.hidden) return;
+    panel.hidden = true;
+    trigger.setAttribute('aria-expanded','false');
+    search.removeAttribute('aria-activedescendant');
+    if(refocus) trigger.focus();
+  }
+  function choose(id){
+    state[catKey] = id;
+    syncTrigger();
+    close(true);
+    onStateChange();
+  }
+  function syncTrigger(){
+    const lbl = labelOf(catKey, state[catKey]);
+    trigger.textContent = lbl || ('— pilih ' + cat.label + ' —');
+    trigger.classList.toggle('is-empty', !lbl);
+    clearBt.hidden = !lbl;
+  }
+
+  trigger.addEventListener('click', function(){ panel.hidden ? open() : close(true); });
+  trigger.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' '){ e.preventDefault(); open(); }
+  });
+  clearBt.addEventListener('click', function(e){
+    e.stopPropagation();
+    state[catKey] = '';
+    syncTrigger();
+    onStateChange();
+  });
+  search.addEventListener('input', function(){ renderList(search.value); });
+  search.addEventListener('keydown', function(e){
+    if(e.key === 'ArrowDown'){ e.preventDefault(); if(visible.length) setActive((active + 1) % visible.length); }
+    else if(e.key === 'ArrowUp'){ e.preventDefault(); if(visible.length) setActive((active - 1 + visible.length) % visible.length); }
+    else if(e.key === 'Home'){ e.preventDefault(); if(visible.length) setActive(0); }
+    else if(e.key === 'End'){ e.preventDefault(); if(visible.length) setActive(visible.length - 1); }
+    else if(e.key === 'Enter'){ e.preventDefault(); if(active >= 0 && visible[active]) choose(visible[active].dataset.id); }
+    else if(e.key === 'Escape'){ e.preventDefault(); close(true); }
+    else if(e.key === 'Tab'){ close(false); }
+  });
+  list.addEventListener('mousedown', function(e){
+    const opt = e.target.closest('.cbx-opt');
+    if(opt){ e.preventDefault(); choose(opt.dataset.id); }
+  });
+  list.addEventListener('mousemove', function(e){
+    const opt = e.target.closest('.cbx-opt');
+    if(opt){ const i = visible.indexOf(opt); if(i >= 0 && i !== active) setActive(i, false); }
+  });
+  document.addEventListener('mousedown', function(e){
+    if(!panel.hidden && !root.contains(e.target)) close(false);
+  });
+
+  syncTrigger();
+  return { sync: syncTrigger, close: function(){ close(false); } };
+}
+
+/* =========================================================================
+   PERAKITAN PROMPT
+   ========================================================================= */
+function orientationOf(ratio, lang){
+  const parts = ratio.split(':').map(Number);
+  if(parts[0] === parts[1]) return lang === 'en' ? 'square format' : 'format persegi';
+  return parts[0] > parts[1]
+    ? (lang === 'en' ? 'landscape orientation' : 'orientasi lanskap')
+    : (lang === 'en' ? 'portrait orientation'  : 'orientasi potret');
+}
+function negList(){
+  return state.negative.split(/[\n,]+/).map(function(x){ return x.trim(); }).filter(Boolean).join(', ');
+}
+function mjParams(){
+  let p = '';
+  if(state.ratio) p += ' --ar ' + state.ratio;
+  const n = negList();
+  if(n) p += ' --no ' + n;
+  return p;
+}
+function techInline(){
+  const lang = state.lang, out = [];
+  if(state.target === 'midjourney') return out;      // dikirim sebagai --flag, bukan kalimat
+  if(state.ratio){
+    out.push(lang === 'en'
+      ? state.ratio + ' aspect ratio, ' + orientationOf(state.ratio, lang)
+      : 'rasio ' + state.ratio + ', ' + orientationOf(state.ratio, lang));
+  }
+  if(state.target !== 'sd'){                         // SD punya kolom negative sendiri
+    const n = negList();
+    if(n) out.push((lang === 'en' ? 'avoid: ' : 'hindari: ') + n);
+  }
+  return out;
+}
+
+function buildSegments(){
+  const lang = state.lang, out = [];
+
+  const subj = [state.objek, state.atribut, state.ekspresi, state.subjExtra]
+    .map(function(v){ return v.trim(); }).filter(Boolean);
+  if(subj.length) out.push({ c:1, text: subj.join(', ') });
+
+  const gayaKey = state.mode === 'hidup' ? 'gayaHidup' : 'gayaBenda';
+  const gaya = [textOf(gayaKey, state[gayaKey], lang), state.gayaExtra.trim()].filter(Boolean);
+  if(gaya.length) out.push({ c:2, text: gaya.join(', ') });
+
+  [['framing',3,'framingExtra'], ['lighting',4,'lightingExtra'],
+   ['mood',5,'moodExtra'], ['detail',6,'detailExtra']].forEach(function(row){
+    const parts = [textOf(row[0], state[row[0]], lang), state[row[2]].trim()].filter(Boolean);
+    if(parts.length) out.push({ c: row[1], text: parts.join(', ') });
+  });
+
+  const tech = techInline();
+  if(tech.length) out.push({ c:7, text: tech.join(', ') });
+
+  return out;
+}
+
+function plainPrompt(){
+  let t = buildSegments().map(function(s){ return s.text; }).join(', ');
+  if(state.target === 'midjourney') t += mjParams();
+  return t.trim();
+}
+
+function render(){
+  const segs = buildSegments();
+  const box  = $('promptBox');
+
+  if(!segs.length && !(state.target === 'midjourney' && mjParams())){
     box.innerHTML = '<span class="empty">Mulai isi elemen di kiri — prompt bakal muncul di sini secara otomatis.</span>';
+  }else{
+    let html = segs.map(function(s){
+      return '<span class="seg seg-' + s.c + '">' + esc(s.text) + '</span>';
+    }).join(', ');
+    if(state.target === 'midjourney'){
+      const p = mjParams().trim();
+      if(p) html += (html ? ' ' : '') + '<span class="seg seg-7">' + esc(p) + '</span>';
+    }
+    box.innerHTML = html;
+  }
+
+  const plain = plainPrompt();
+  const words = plain ? plain.split(/\s+/).filter(Boolean).length : 0;
+  $('counter').textContent = plain.length + ' karakter · ' + words + ' kata';
+  $('sheetCount').textContent = plain.length + ' karakter';
+
+  const showNeg = state.target === 'sd' && negList();
+  $('negOut').hidden = !showNeg;
+  if(showNeg) $('negText').textContent = negList();
+
+  $('negHint').textContent =
+    state.target === 'midjourney' ? '— dikirim sebagai --no' :
+    state.target === 'sd'         ? '— disalin di kotak terpisah' :
+                                    '— jadi kalimat “hindari: …”';
+}
+
+/* =========================================================================
+   STATE: sinkronisasi UI, simpan, muat, bagikan
+   ========================================================================= */
+function syncUI(){
+  TEXT_FIELDS.forEach(function(f){ $(f[1]).value = state[f[0]]; });
+  SELECT_FIELDS.forEach(function(f){ $(f[1]).value = state[f[0]]; });
+
+  const hidup = state.mode === 'hidup';
+  $('modeHidup').setAttribute('aria-pressed', String(hidup));
+  $('modeBenda').setAttribute('aria-pressed', String(!hidup));
+  $('cbxGayaHidup').hidden = !hidup;
+  $('cbxGayaBenda').hidden = hidup;
+  $('gayaLabel').textContent = hidup
+    ? 'Gaya untuk makhluk hidup (orang / binatang)'
+    : 'Gaya untuk benda mati (objek / produk / tempat)';
+  $('styleModeHint').textContent = hidup ? 'karakter' : 'objek';
+
+  const en = state.lang === 'en';
+  $('langId').setAttribute('aria-pressed', String(!en));
+  $('langEn').setAttribute('aria-pressed', String(en));
+  $('langNote').hidden = !en;
+
+  PICKERS.forEach(function(k){ combos[k].sync(); });
+}
+
+function saveState(){
+  try{ localStorage.setItem(LS_STATE, JSON.stringify(state)); }catch(e){}
+}
+function sanitize(raw){
+  const clean = defaultState();
+  if(!raw || typeof raw !== 'object') return clean;
+  clean.mode   = raw.mode === 'benda' ? 'benda' : 'hidup';
+  clean.lang   = raw.lang === 'en' ? 'en' : 'id';
+  clean.target = ['chatgpt','midjourney','sd'].indexOf(raw.target) >= 0 ? raw.target : 'chatgpt';
+  clean.ratio  = $('ratio').querySelector('option[value="' + String(raw.ratio || '').replace(/"/g,'') + '"]') ? raw.ratio : '';
+  PICKERS.forEach(function(k){ clean[k] = findItem(k, raw[k]) ? raw[k] : ''; });
+  TEXT_FIELDS.forEach(function(f){ clean[f[0]] = typeof raw[f[0]] === 'string' ? raw[f[0]].slice(0, 600) : ''; });
+  return clean;
+}
+function loadState(){
+  try{
+    const raw = localStorage.getItem(LS_STATE);
+    if(raw) state = sanitize(JSON.parse(raw));
+  }catch(e){}
+}
+
+/* Base64 URL-safe yang aman untuk karakter non-ASCII */
+function b64encode(str){
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  bytes.forEach(function(b){ bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+}
+function b64decode(s){
+  const b64 = s.replace(/-/g,'+').replace(/_/g,'/');
+  const bin = atob(b64 + '==='.slice(0, (4 - b64.length % 4) % 4));
+  return new TextDecoder().decode(Uint8Array.from(bin, function(c){ return c.charCodeAt(0); }));
+}
+function loadFromHash(){
+  const m = location.hash.match(/^#p=(.+)$/);
+  if(!m) return false;
+  try{
+    state = sanitize(JSON.parse(b64decode(m[1])));
+    return true;
+  }catch(e){ return false; }
+}
+function shareLink(){
+  const url = location.href.split('#')[0] + '#p=' + b64encode(JSON.stringify(state));
+  try{ history.replaceState(null, '', url); }catch(e){}
+  copyText(url).then(function(ok){
+    toast(ok ? 'Link tersalin — tinggal dibagikan.' : 'Link ada di address bar, salin manual ya.');
+  });
+}
+
+/* =========================================================================
+   RIWAYAT
+   ========================================================================= */
+function readHist(){
+  try{ const r = localStorage.getItem(LS_HIST); return r ? JSON.parse(r) : []; }
+  catch(e){ return []; }
+}
+function writeHist(h){
+  try{ localStorage.setItem(LS_HIST, JSON.stringify(h)); }catch(e){}
+}
+function pushHistory(){
+  const p = plainPrompt();
+  if(!p) return;
+  let h = readHist().filter(function(x){ return x.p !== p; });
+  h.unshift({ p: p, s: JSON.parse(JSON.stringify(state)), t: Date.now() });
+  writeHist(h.slice(0, 10));
+  renderHist();
+}
+function relTime(ts){
+  const d = Math.floor((Date.now() - ts) / 1000);
+  if(d < 60) return 'baru saja';
+  if(d < 3600) return Math.floor(d / 60) + ' mnt';
+  if(d < 86400) return Math.floor(d / 3600) + ' jam';
+  return Math.floor(d / 86400) + ' hr';
+}
+function renderHist(){
+  const h = readHist();
+  const el = $('histList');
+  if(!h.length){
+    el.innerHTML = '<div class="hist-empty">Belum ada. Prompt yang kamu salin bakal tersimpan di sini.</div>';
     return;
   }
-
-  const html = segments.map(seg =>
-    '<span class="seg" style="background:' + seg.color + '22; color:' + seg.color + '">' + esc(seg.text) + '</span>'
-  ).join(', ');
-
-  box.innerHTML = html;
+  el.innerHTML = h.map(function(item, i){
+    return '<div class="hist-item">' +
+      '<button type="button" class="restore" data-i="' + i + '" title="Pulihkan prompt ini">' + esc(item.p) + '</button>' +
+      '<span class="when">' + esc(relTime(item.t)) + '</span>' +
+      '<button type="button" class="del" data-del="' + i + '" aria-label="Hapus dari riwayat">&times;</button>' +
+    '</div>';
+  }).join('');
 }
-
-function getPlainPrompt(){
-  const d = collect();
-  let subjParts = [d.objek, d.atribut, d.ekspresi].filter(Boolean);
-  let parts = [];
-  if(subjParts.length) parts.push(subjParts.join(', '));
-  [d.gayaHidup, d.gayaBenda, d.framing, d.lighting, d.mood, d.detail].forEach(v => {
-    if(v) parts.push(v);
-  });
-  return parts.join(', ');
-}
-
-function copyPrompt(){
-  const text = getPlainPrompt();
-  if(!text) return;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.getElementById('copyBtn');
-    const original = btn.textContent;
-    btn.textContent = 'Tersalin ✓';
-    btn.classList.add('copied');
-    setTimeout(() => {
-      btn.textContent = original;
-      btn.classList.remove('copied');
-    }, 1600);
-  });
-}
-
-function resetAll(){
-  ['subjObjek','subjAtribut','subjEkspresi'].forEach(id => document.getElementById(id).value = '');
-  ['gayaHidup','gayaBenda','framing','lighting','mood','detail'].forEach(id => document.getElementById(id).value = '');
-  buildPrompt();
-}
-
-['subjObjek','subjAtribut','subjEkspresi','gayaHidup','gayaBenda','framing','lighting','mood','detail'].forEach(id => {
-  const el = document.getElementById(id);
-  el.addEventListener('input', buildPrompt);
-  el.addEventListener('change', buildPrompt);
+$('histList').addEventListener('click', function(e){
+  const del = e.target.closest('[data-del]');
+  if(del){
+    const h = readHist();
+    h.splice(Number(del.dataset.del), 1);
+    writeHist(h);
+    renderHist();
+    return;
+  }
+  const btn = e.target.closest('.restore');
+  if(btn){
+    const item = readHist()[Number(btn.dataset.i)];
+    if(!item) return;
+    state = sanitize(item.s);
+    syncUI();
+    onStateChange();
+    toast('Prompt dipulihkan dari riwayat.');
+  }
 });
+
+/* =========================================================================
+   EVENT WIRING
+   ========================================================================= */
+function onStateChange(){
+  render();
+  saveState();
+}
+
+PICKERS.forEach(function(k){ combos[k] = createCombobox(k); });
+
+TEXT_FIELDS.forEach(function(f){
+  $(f[1]).addEventListener('input', function(e){
+    state[f[0]] = e.target.value;
+    onStateChange();
+  });
+});
+SELECT_FIELDS.forEach(function(f){
+  $(f[1]).addEventListener('change', function(e){
+    state[f[0]] = e.target.value;
+    onStateChange();
+  });
+});
+
+$('modeHidup').addEventListener('click', function(){ state.mode = 'hidup'; syncUI(); onStateChange(); });
+$('modeBenda').addEventListener('click', function(){ state.mode = 'benda'; syncUI(); onStateChange(); });
+$('langId').addEventListener('click', function(){ state.lang = 'id'; syncUI(); onStateChange(); });
+$('langEn').addEventListener('click', function(){ state.lang = 'en'; syncUI(); onStateChange(); });
+
+$('copyBtn').addEventListener('click', function(){
+  const btn = this, text = plainPrompt();
+  if(!text){ toast('Prompt masih kosong.'); return; }
+  copyText(text).then(function(ok){
+    flashBtn(btn, 'Tersalin ✓', ok);
+    if(ok) pushHistory();
+    else toast('Browser menolak akses clipboard. Blok prompt lalu tekan Ctrl+C.');
+  });
+});
+$('copyNegBtn').addEventListener('click', function(){
+  const btn = this;
+  copyText(negList()).then(function(ok){ flashBtn(btn, 'Tersalin ✓', ok); });
+});
+$('shareBtn').addEventListener('click', shareLink);
+
+$('randomBtn').addEventListener('click', function(){
+  const gayaKey = state.mode === 'hidup' ? 'gayaHidup' : 'gayaBenda';
+  [gayaKey, 'framing', 'lighting', 'mood', 'detail'].forEach(function(k){
+    const items = allItems(k);
+    state[k] = items[Math.floor(Math.random() * items.length)][0];
+  });
+  syncUI();
+  onStateChange();
+  toast('Elemen 2–6 diacak. Subjek tetap punya kamu.');
+});
+
+$('resetBtn').addEventListener('click', function(){
+  const keepLang = state.lang, keepTarget = state.target;
+  PICKERS.forEach(function(k){ combos[k].close(); });
+  state = defaultState();
+  state.lang = keepLang;
+  state.target = keepTarget;
+  try{ history.replaceState(null, '', location.href.split('#')[0]); }catch(e){}
+  syncUI();
+  onStateChange();
+});
+
+/* Preset */
+$('presetChips').innerHTML = PRESETS.map(function(p, i){
+  return '<button type="button" class="chip" data-preset="' + i + '">' + esc(p.name) + '</button>';
+}).join('');
+$('presetChips').addEventListener('click', function(e){
+  const btn = e.target.closest('[data-preset]');
+  if(!btn) return;
+  const p = PRESETS[Number(btn.dataset.preset)];
+  state.mode = p.mode;
+  state.gayaHidup = p.gayaHidup || '';
+  state.gayaBenda = p.gayaBenda || '';
+  ['framing','lighting','mood','detail'].forEach(function(k){ state[k] = p[k] || ''; });
+  state.ratio = p.ratio || '';
+  syncUI();
+  onStateChange();
+  toast('Preset “' + p.name + '” diterapkan. Tinggal isi subjeknya.');
+});
+
+/* Bottom sheet di layar kecil */
+$('sheetHandle').addEventListener('click', function(){
+  const panel = $('outputPanel');
+  const open = panel.classList.toggle('open');
+  this.setAttribute('aria-expanded', String(open));
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape'){
+    const panel = $('outputPanel');
+    if(panel.classList.contains('open')){
+      panel.classList.remove('open');
+      $('sheetHandle').setAttribute('aria-expanded','false');
+    }
+  }
+});
+
+/* ---------- boot ---------- */
+if(!loadFromHash()) loadState();
+syncUI();
+render();
+renderHist();
 </script>
 </body>
 </html>
