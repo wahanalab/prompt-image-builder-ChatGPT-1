@@ -1661,23 +1661,30 @@ function saPixel(p, kind){
   const cell = 9, w = map[0].length * cell, x0 = (SA_W - w) / 2, y0 = (SA_H - map.length * cell) / 2;
   const col = { H:p.h, S:p.sk, C:p.c, A:p.ac, E:p.ln, M:p.ac };
   let out = '';
+  // Sel sewarna yang bersebelahan digabung jadi satu rect. Tanpa stroke, rect
+  // yang bersinggungan menyatu sempurna, jadi gambarnya sama persis.
   map.forEach(function(row, r){
-    for(let c = 0; c < row.length; c++){
+    let c = 0;
+    while(c < row.length){
       const ch = row[c];
-      if(ch === '.') continue;
-      out += '<rect x="' + (x0 + c * cell) + '" y="' + (y0 + r * cell) + '" width="' + cell +
+      if(ch === '.'){ c++; continue; }
+      let n = 1;
+      while(c + n < row.length && row[c + n] === ch) n++;
+      out += '<rect x="' + (x0 + c * cell) + '" y="' + (y0 + r * cell) + '" width="' + (n * cell) +
              '" height="' + cell + '" fill="' + (col[ch] || p.sk) + '"/>';
+      c += n;
     }
   });
   if(saHas(p, 'cube')){
-    out += '<g stroke="rgba(0,0,0,.18)" stroke-width="1" fill="none">';
+    // Garis kubus: satu path berisi banyak subpath, bukan puluhan rect.
+    let d = '';
     map.forEach(function(row, r){
       for(let c = 0; c < row.length; c++){
         if(row[c] === '.') continue;
-        out += '<rect x="' + (x0 + c * cell) + '" y="' + (y0 + r * cell) + '" width="' + cell + '" height="' + cell + '"/>';
+        d += 'M' + (x0 + c * cell) + ' ' + (y0 + r * cell) + 'h' + cell + 'v' + cell + 'h-' + cell + 'z';
       }
     });
-    out += '</g>';
+    out += '<path d="' + d + '" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="1"/>';
   }
   return out;
 }
@@ -2207,8 +2214,9 @@ const DETAIL_ART = {
 };
 
 /* ---------- pemilih ---------- */
-function saArtFor(catKey, id){
-  saUid++;
+const SA_CACHE = new Map();    // hover berulang memakai markup yang sudah jadi
+
+function saBuild(catKey, id){
   if(catKey === 'gayaHidup') return saRender((STYLE_ART.gayaHidup || {})[id], 'bust');
   if(catKey === 'gayaBenda') return saRender((STYLE_ART.gayaBenda || {})[id], 'object');
   if(catKey === 'framing')   return saFraming(FRAMING_ART[id]);
@@ -2216,6 +2224,16 @@ function saArtFor(catKey, id){
   if(catKey === 'mood')      return saMood(MOOD_ART[id]);
   if(catKey === 'detail')    return saDetail(DETAIL_ART[id]);
   return '';
+}
+function saArtFor(catKey, id){
+  const key = catKey + '|' + id;
+  let art = SA_CACHE.get(key);
+  if(art === undefined){
+    saUid++;                   // hanya naik saat benar-benar merender
+    art = saBuild(catKey, id);
+    SA_CACHE.set(key, art);
+  }
+  return art;
 }
 
 /* =========================================================================
