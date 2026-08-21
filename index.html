@@ -78,6 +78,7 @@
   .controls{ display:flex; flex-direction:column; gap:14px; min-width:0; }
 
   .card{
+    position: relative;
     background: var(--panel);
     border: 1px solid var(--line);
     border-radius: 14px;
@@ -93,6 +94,43 @@
   }
   .card-head h3{ font-family:'Space Grotesk', sans-serif; font-size:15px; font-weight:600; margin:0; }
   .card-head span{ font-size:12px; color:var(--ice-dim); margin-left:auto; }
+
+  /* Ikon "i" di kanan atas kartu + kotak penjelasan langkah */
+  .info-btn{
+    margin-left:auto; align-self:center; flex-shrink:0;
+    width:20px; height:20px; padding:0; border-radius:50%;
+    border:1px solid var(--line); background:var(--navy-soft); color:var(--ice-dim);
+    font-family:'Space Grotesk', sans-serif; font-size:11px; font-weight:600; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition: background .15s ease, border-color .15s ease, color .15s ease;
+  }
+  .card-head span + .info-btn{ margin-left:8px; }
+  .info-btn:hover{ border-color: var(--blue-soft); color: var(--ice); }
+  .info-btn:focus-visible{ outline:2px solid var(--blue-soft); outline-offset:2px; }
+  .info-btn[aria-expanded="true"]{ background: var(--blue); border-color: var(--blue); color:#fff; }
+
+  .info-pop{
+    position:absolute; right:14px; z-index:70;
+    width:min(320px, calc(100% - 28px));
+    background:#0D1533; border:1px solid var(--blue-soft); border-radius:12px;
+    padding:13px 15px; box-shadow:0 20px 48px rgba(0,0,0,.6);
+    overflow-y:auto; overscroll-behavior:contain;
+  }
+  .info-pop h5{
+    font-family:'Space Grotesk', sans-serif; font-size:12.5px; font-weight:600;
+    margin:0 0 7px; color:var(--ice);
+  }
+  .info-pop p{ margin:0; font-size:12px; line-height:1.7; color:var(--ice-dim); }
+  .info-pop::before{
+    content:''; position:absolute; top:-6px; right:11px; width:10px; height:10px;
+    background:#0D1533; transform:rotate(45deg);
+    border-left:1px solid var(--blue-soft); border-top:1px solid var(--blue-soft);
+  }
+  .info-pop.flip::before{
+    top:auto; bottom:-6px;
+    border-left:none; border-top:none;
+    border-right:1px solid var(--blue-soft); border-bottom:1px solid var(--blue-soft);
+  }
 
   .row3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
   .row2{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
@@ -447,6 +485,7 @@
           <div class="num" style="background:var(--c1)">1</div>
           <h3>Subjek</h3>
           <span>objek · atribut · ekspresi</span>
+          <button type="button" class="info-btn" data-info="subjek" aria-expanded="false" aria-label="Penjelasan langkah Subjek">i</button>
         </div>
         <div class="stack">
           <div class="row3">
@@ -476,6 +515,7 @@
           <div class="num" style="background:var(--c2)">2</div>
           <h3>Gaya Visual</h3>
           <span id="styleModeHint">karakter</span>
+          <button type="button" class="info-btn" data-info="gaya" aria-expanded="false" aria-label="Penjelasan langkah Gaya Visual">i</button>
         </div>
         <div class="stack">
           <div class="seg-ctl" role="group" aria-label="Jenis subjek untuk gaya visual">
@@ -499,6 +539,7 @@
           <div class="num" style="background:var(--c3)">3</div>
           <h3>Framing</h3>
           <span>jarak · sudut · komposisi</span>
+          <button type="button" class="info-btn" data-info="framing" aria-expanded="false" aria-label="Penjelasan langkah Framing">i</button>
         </div>
         <div class="stack">
           <div id="cbxFraming"></div>
@@ -511,6 +552,7 @@
           <div class="num" style="background:var(--c4)">4</div>
           <h3>Pencahayaan</h3>
           <span>alam · studio · sumber khusus</span>
+          <button type="button" class="info-btn" data-info="lighting" aria-expanded="false" aria-label="Penjelasan langkah Pencahayaan">i</button>
         </div>
         <div class="stack">
           <div id="cbxLighting"></div>
@@ -523,6 +565,7 @@
           <div class="num" style="background:var(--c5)">5</div>
           <h3>Mood</h3>
           <span>atmosfer</span>
+          <button type="button" class="info-btn" data-info="mood" aria-expanded="false" aria-label="Penjelasan langkah Mood">i</button>
         </div>
         <div class="stack">
           <div id="cbxMood"></div>
@@ -535,6 +578,7 @@
           <div class="num" style="background:var(--c6)">6</div>
           <h3>Detail Teknis</h3>
           <span>tekstur · warna · lensa</span>
+          <button type="button" class="info-btn" data-info="detail" aria-expanded="false" aria-label="Penjelasan langkah Detail Teknis">i</button>
         </div>
         <div class="stack">
           <div id="cbxDetail"></div>
@@ -547,6 +591,7 @@
           <div class="num" style="background:var(--c7)">7</div>
           <h3>Output &amp; Parameter</h3>
           <span>rasio · negative prompt</span>
+          <button type="button" class="info-btn" data-info="output" aria-expanded="false" aria-label="Penjelasan langkah Output & Parameter">i</button>
         </div>
         <div class="stack">
           <div class="row2">
@@ -1638,6 +1683,28 @@ $('presetChips').addEventListener('click', function(e){
 });
 
 
+/* Menempatkan popover absolut di dalam `host`: di bawah `belowTop` (koordinat
+   lokal host) kalau muat di viewport, kalau tidak dibalik ke atas host. Tinggi
+   dibatasi sisa ruang, kelebihannya digulir di dalam popover sendiri. */
+function placePopover(pop, host, belowTop){
+  const GAP = 10, PAD = 12;
+  const vh = document.documentElement.clientHeight;
+  const hostTop = host.getBoundingClientRect().top;
+  const roomBelow = vh - (hostTop + belowTop) - PAD;
+  const roomAbove = hostTop - GAP - PAD;
+  pop.style.maxHeight = '';
+  const needed = pop.offsetHeight;
+  const below = needed <= roomBelow || roomBelow >= roomAbove;
+  if(below){
+    pop.style.top = belowTop + 'px';
+    pop.style.maxHeight = Math.max(160, roomBelow) + 'px';
+  }else{
+    pop.style.maxHeight = Math.max(160, roomAbove) + 'px';
+    pop.style.top = -(Math.min(needed, roomAbove) + GAP) + 'px';
+  }
+  pop.classList.toggle('flip', !below);
+}
+
 /* Pratinjau preset: tampil saat kursor di atas chip, saat chip difokus lewat
    keyboard, dan saat chip diklik. Popover diposisikan di bawah SELURUH baris
    chip supaya tidak pernah menutupi chip lain yang mau diklik berikutnya. */
@@ -1683,22 +1750,7 @@ $('presetChips').addEventListener('click', function(e){
     const maxLeft = Math.max(0, chips.clientWidth - pop.offsetWidth);
     pop.style.left = Math.min(chip.offsetLeft, maxLeft) + 'px';
 
-    // Muat popover di dalam viewport: taruh di bawah baris chip kalau muat,
-    // kalau tidak balik ke atas, lalu batasi tingginya pada sisa ruang.
-    const box = chips.getBoundingClientRect();
-    const vh = document.documentElement.clientHeight;
-    const GAP = 10, PAD = 12;
-    const roomBelow = vh - box.bottom - GAP - PAD;
-    const roomAbove = box.top - GAP - PAD;
-    pop.style.maxHeight = '';
-    const needed = pop.offsetHeight;
-    if(needed <= roomBelow || roomBelow >= roomAbove){
-      pop.style.top = (chips.clientHeight + GAP) + 'px';
-      pop.style.maxHeight = Math.max(160, roomBelow) + 'px';
-    }else{
-      pop.style.maxHeight = Math.max(160, roomAbove) + 'px';
-      pop.style.top = -(Math.min(needed, roomAbove) + GAP) + 'px';
-    }
+    placePopover(pop, chips, chips.clientHeight + 10);
     pop.style.visibility = '';
     Array.prototype.forEach.call(chips.querySelectorAll('.chip'), function(c){
       c.classList.remove('is-active');
@@ -1748,6 +1800,78 @@ $('presetChips').addEventListener('click', function(e){
   document.addEventListener('keydown', function(e){ if(e.key === 'Escape') hide(); });
   document.addEventListener('mousedown', function(e){ if(!chips.contains(e.target)) hide(); });
   window.addEventListener('resize', hide);
+})();
+
+/* Penjelasan tiap langkah, dibuka lewat ikon "i" di kanan atas kartu. */
+const STEP_INFO = {
+  subjek: {
+    title: 'Langkah 1 — Subjek',
+    text: 'Ini inti gambarmu: apa atau siapa yang jadi pusat perhatian. Isi Objek dengan bendanya (mis. "prajurit", "botol parfum"), Atribut dengan ciri yang membedakannya (mis. "tua", "berkarat"), dan Ekspresi dengan emosi atau kondisinya (mis. "lelah", "tersenyum"). Kalau bagian ini dikosongkan, model cuma menerima instruksi gaya tanpa tahu harus menggambar apa, jadi isi ini lebih dulu sebelum elemen lainnya.'
+  },
+  gaya: {
+    title: 'Langkah 2 — Gaya Visual',
+    text: 'Menentukan gambar ini dibuat dengan cara apa: anime, cat air, foto realistis, atau blueprint teknik. Pilih dulu apakah subjekmu makhluk hidup atau benda mati, karena daftar gayanya memang berbeda — gaya karakter seperti Chibi tidak masuk akal untuk sebuah botol, begitu juga sebaliknya. Ini elemen yang paling menentukan tampilan akhir, jadi kalau hasilnya terasa meleset jauh, ini yang pertama diganti.'
+  },
+  framing: {
+    title: 'Langkah 3 — Framing',
+    text: 'Mengatur posisi kamera terhadap subjek: seberapa dekat (dari extreme close-up sampai wide shot), dari sudut mana (bawah, atas, atau sejajar mata), dan bagaimana subjek diletakkan dalam frame. Sudut rendah membuat subjek terasa menjulang dan berkuasa, sudut tinggi membuatnya terasa kecil dan rentan — jadi framing bukan sekadar urusan teknis, tapi ikut mengubah kesan emosional gambar.'
+  },
+  lighting: {
+    title: 'Langkah 4 — Pencahayaan',
+    text: 'Cahaya menentukan mood jauh lebih kuat daripada pilihan warna. Subjek yang sama akan terasa hangat di golden hour, mencekam kalau hanya diterangi lilin dari bawah, dan netral di soft studio light. Yang perlu diperhatikan adalah arah datangnya cahaya, bukan cuma terang atau gelapnya: dari samping menghasilkan bayangan dramatis, dari belakang menghasilkan siluet.'
+  },
+  mood: {
+    title: 'Langkah 5 — Mood',
+    text: 'Menyatakan perasaan yang ingin ditimbulkan secara eksplisit, supaya model tidak menebak sendiri. Paling berguna sebagai penegas: kalau kamu sudah memilih cahaya lilin dan sudut miring, menambahkan mood horror mengunci arah interpretasinya. Hindari mood yang bertabrakan dengan pencahayaan — "ceria" dipasangkan dengan chiaroscuro biasanya menghasilkan gambar yang terasa bingung sendiri.'
+  },
+  detail: {
+    title: 'Langkah 6 — Detail Teknis',
+    text: 'Sentuhan akhir soal permukaan dan lensa: tekstur bahan, palet warna, dan karakter optik seperti bokeh, film grain, atau lens flare. Efeknya paling halus di antara semua elemen, jadi bagian ini dipakai untuk merapikan hasil yang sudah hampir benar, bukan untuk menyelamatkan prompt yang arahnya masih salah. Cukup satu pilihan; menumpuk terlalu banyak detail justru membuat hasilnya ramai.'
+  },
+  output: {
+    title: 'Langkah 7 — Output & Parameter',
+    text: 'Mengatur bentuk keluarannya, bukan isinya. Target model menentukan formatnya: Midjourney menerima parameter --ar dan --no, sedangkan ChatGPT dan Stable Diffusion butuh kalimat biasa. Aspect ratio menentukan proporsi kanvas, dan negative prompt mendaftar hal yang ingin dihindari. Perlakuan negative prompt berbeda-beda per model, dan keterangan kecil di bawah judul kolomnya selalu menunjukkan bentuk mana yang sedang dipakai.'
+  }
+};
+
+(function(){
+  let openBtn = null, openPop = null;
+
+  function closeInfo(){
+    if(openPop){ openPop.remove(); openPop = null; }
+    if(openBtn){
+      openBtn.setAttribute('aria-expanded', 'false');
+      openBtn.removeAttribute('aria-controls');
+      openBtn = null;
+    }
+  }
+
+  document.addEventListener('click', function(e){
+    const btn = e.target.closest ? e.target.closest('.info-btn') : null;
+    if(btn){
+      const wasOpen = (openBtn === btn);
+      closeInfo();
+      if(wasOpen) return;                    // klik kedua menutup kembali
+      const info = STEP_INFO[btn.dataset.info];
+      if(!info) return;
+      const card = btn.closest('.card');
+      const head = card.querySelector('.card-head');
+      const pop = document.createElement('div');
+      pop.className = 'info-pop';
+      pop.id = 'infoPop';
+      pop.innerHTML = '<h5>' + esc(info.title) + '</h5><p>' + esc(info.text) + '</p>';
+      card.appendChild(pop);
+      placePopover(pop, card, head.offsetTop + head.offsetHeight + 8);
+      btn.setAttribute('aria-expanded', 'true');
+      btn.setAttribute('aria-controls', 'infoPop');
+      openBtn = btn; openPop = pop;
+      return;
+    }
+    if(openPop && !openPop.contains(e.target)) closeInfo();
+  });
+
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeInfo(); });
+  window.addEventListener('resize', closeInfo);
 })();
 
 /* Bottom sheet di layar kecil */
