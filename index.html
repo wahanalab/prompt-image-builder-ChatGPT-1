@@ -224,6 +224,45 @@
   .cbx-opt[aria-selected="true"]{ color: var(--blue-soft); font-weight:600; }
   .cbx-empty{ padding:14px 9px; font-size:12.5px; color:var(--muted); font-style:italic; }
 
+  /* Kotak info opsi dropdown — mengikuti opsi yang sedang disorot.
+     pointer-events:none supaya tidak pernah menghalangi daftar di bawahnya. */
+  .opt-pop{
+    position:fixed; z-index:90; width:300px; pointer-events:none;
+    background:#0D1533; border:1px solid var(--blue-soft); border-radius:12px;
+    padding:12px; box-shadow:0 22px 54px rgba(0,0,0,.66); overflow:hidden;
+  }
+  .opt-pop .op-art{
+    display:block; width:100%; height:auto; border-radius:8px;
+    border:1px solid var(--line); background:#05070C;
+  }
+  .opt-pop .op-grup{
+    margin-top:9px; font-size:9.5px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--muted); font-weight:600;
+  }
+  .opt-pop h5{
+    font-family:'Space Grotesk', sans-serif; font-size:13px; font-weight:600;
+    margin:3px 0 6px; color:var(--ice);
+  }
+  .opt-pop .op-desc{ margin:0 0 2px; font-size:11.5px; line-height:1.65; color:var(--ice-dim); }
+  .opt-pop .op-sec{ border-top:1px solid var(--line); padding-top:8px; margin-top:9px; }
+  .opt-pop .op-cap{
+    display:block; font-size:9.5px; text-transform:uppercase; letter-spacing:.07em;
+    color:var(--muted); margin-bottom:5px;
+  }
+  .opt-pop .op-cap em{ font-style:normal; text-transform:none; letter-spacing:0; }
+  .opt-pop code{
+    display:block; font-family:'JetBrains Mono', monospace; font-size:10.5px;
+    line-height:1.6; word-break:break-word;
+  }
+  .opt-pop .op-frasa{ color: var(--c2); }
+  .opt-pop .op-contoh{ color: var(--ice-dim); }
+  @media (max-width: 760px){
+    /* Di layar sempit kotaknya jadi bilah bawah; ilustrasi disembunyikan
+       supaya penjelasan dan contohnya tetap muat. */
+    .opt-pop .op-art{ display:none; }
+    .opt-pop .op-grup{ margin-top:0; }
+  }
+
   /* ---------- Segmented control ---------- */
   .seg-ctl{
     display:inline-flex; background: var(--navy-soft);
@@ -1129,6 +1168,549 @@ const PRESET_INFO = {
   }
 };
 
+
+/* Penjelasan singkat tiap opsi, tampil saat kursor menyorot opsi di dropdown.
+   Fokusnya: seperti apa hasilnya dan kapan gaya ini pilihan yang tepat. */
+const OPTION_INFO = {
+  gayaHidup: {
+    anime:'Mata besar, garis luar tegas, dan warna rata khas animasi Jepang. Pilihan aman untuk karakter yang ekspresif dan langsung dikenali.',
+    chibi:'Kepala besar di atas tubuh mungil dengan ekspresi berlebihan. Bikin karakter apa pun terasa menggemaskan, termasuk yang aslinya seram.',
+    ghibli:'Warna hangat, latar alam yang rimbun, dan rasa tenang seperti lukisan tangan. Cocok untuk adegan yang ingin terasa damai dan penuh nostalgia.',
+    pixar:'Animasi 3D dengan warna cerah dan proporsi yang sengaja dilebihkan agar menggemaskan. Permukaannya halus dan pencahayaannya ramah.',
+    disney:'Mata ekspresif, garis lembut, dan gerak yang mengalir. Lebih klasik dan manis dibanding Pixar yang cenderung modern.',
+    dreamworks:'Kartun 3D dengan ekspresi jenaka dan pose dinamis. Karakternya sering terlihat nakal atau sedang bercanda.',
+    fortnite:'Kartun game yang cerah dan stylized dengan bentuk tegas. Pas untuk karakter yang harus terbaca jelas dari jauh.',
+    roblox:'Avatar berbentuk balok sederhana dengan sendi kotak. Sangat ikonik, tapi detail wajah jadi sangat terbatas.',
+    storybook:'Ilustrasi buku anak yang hangat dengan sapuan lembut. Pilihan utama untuk materi edukasi dan cerita anak.',
+    fairytale:'Dunia dongeng yang magis dan lembut, penuh cahaya keemasan. Cocok untuk peri, penyihir baik, dan hutan ajaib.',
+
+    comic:'Panel komik dengan garis tinta tebal dan efek titik halftone. Terasa seperti potongan halaman komik cetak.',
+    manga:'Komposisi dramatis hitam-putih dengan aksen tebal ala sampul manga. Kontrasnya tinggi dan pose-nya sengaja teatrikal.',
+    watercolor:'Warna cair yang saling meresap dengan tepi tidak tegas. Hasilnya lembut dan sedikit tak terduga, seperti lukisan asli.',
+    oil:'Sapuan kuas tebal yang menonjol dan tekstur kanvas yang terlihat. Memberi kesan lukisan galeri yang berat dan mewah.',
+    charcoal:'Goresan arang kasar hitam-putih dengan bayangan tegas. Cepat, ekspresif, dan terasa seperti sketsa mentah seorang seniman.',
+    pencil:'Sketsa pensil dengan arsiran halus dan garis konstruksi yang sengaja dibiarkan. Terasa seperti halaman buku sketsa.',
+    ink:'Ilustrasi tinta hitam dengan kontras tajam dan garis yang mantap. Bersih, grafis, dan enak dijadikan cetakan.',
+    doodle:'Coretan spontan yang ringan dan main-main. Cocok untuk nuansa santai, bukan untuk hasil yang serius atau presisi.',
+    lineart:'Hanya outline bersih tanpa shading rumit. Pas untuk ikon, stiker, atau gambar yang mau diwarnai sendiri nanti.',
+    graffiti:'Cat semprot di dinding kota dengan huruf dan bentuk yang meledak. Membawa energi jalanan dan sedikit pemberontakan.',
+    popart:'Warna blok mencolok dan pengulangan ala Warhol. Berani, datar, dan sangat menarik perhatian.',
+    cubism:'Wajah dan tubuh dipecah jadi bidang-bidang geometris. Hasilnya artistik dan abstrak, bukan potret yang mirip.',
+    surreal:'Logika mimpi dengan bentuk yang mustahil terjadi di dunia nyata. Pilih ini kalau kamu memang ingin membuat penonton bingung.',
+    expressionism:'Emosi kuat disampaikan lewat warna berlebihan dan goresan kasar. Perasaannya lebih penting daripada kemiripan bentuk.',
+
+    renaissance:'Cahaya klasik Eropa, proporsi ideal, dan pose berwibawa. Membuat subjek terasa penting dan abadi.',
+    baroque:'Dramatis dan padat detail dengan kontras cahaya yang tajam. Lebih megah dan bergejolak dibanding renaissance yang tenang.',
+    gothic:'Gelap, runcing, dan monumental seperti katedral tua. Bagus untuk kesan sakral yang sekaligus mengancam.',
+    noir:'Hitam-putih dengan bayangan keras dan suasana detektif tahun 40-an. Misterius, penuh asap dan celah cahaya.',
+    vintage90s:'Warna pudar dan grain film seperti foto kamera saku lama. Langsung memicu rasa nostalgia.',
+    y2k:'Krom mengkilap, plastik bening, dan futurisme awal 2000-an. Optimistis, norak, dan sangat khas zamannya.',
+    vaporwave:'Gradasi pink-ungu-biru neon dengan nuansa retro digital. Estetis dan melankolis sekaligus.',
+    synthwave:'Langit senja neon dengan grid yang memanjang ke horizon. Terasa seperti sampul album elektronik 80-an.',
+
+    claymation:'Tekstur tanah liat lengkap dengan jejak jari. Terasa buatan tangan dan sedikit tidak sempurna, justru itu daya tariknya.',
+    lego:'Tersusun dari bata LEGO dengan sendi minifigure yang khas. Semua bentuk jadi kotak dan modular.',
+    funko:'Kepala besar, mata hitam polos, tubuh kecil. Instan terbaca sebagai figur koleksi, bukan karakter hidup.',
+    actionfigure:'Figur koleksi dengan sendi articulated dan kemasan display. Cocok untuk konsep mainan atau mockup produk.',
+    puppet:'Boneka kayu dengan sendi terlihat dan permukaan dicat. Ada nuansa teater tua yang sedikit menyeramkan.',
+    felt:'Karakter dari kain felt dengan tepi jahitan terlihat. Lembut, hangat, dan terasa buatan tangan.',
+    knit:'Rajutan benang dengan tekstur simpul yang jelas. Cocok untuk suasana musim dingin dan nuansa rumahan.',
+
+    pixelart:'Piksel 8-bit dengan palet terbatas dan dithering. Nostalgia game retro, tapi detail halus akan hilang.',
+    pixelportrait:'Wajah blocky dengan palet retro, fokus ke potret. Ekspresi disampaikan lewat piksel yang sangat sedikit.',
+    lowpoly:'Model 3D dengan facet geometris yang sengaja terlihat. Bersih, modern, dan enak dijadikan ilustrasi.',
+    voxel:'Dunia tersusun dari kubus-kubus kecil. Seperti pixel art tapi dalam tiga dimensi.',
+    minecraft:'Karakter blocky dengan tekstur kasar khas Minecraft. Sangat spesifik, langsung dikenali siapa pun.',
+    ps1:'Grafis PlayStation 1 dengan tekstur rendah dan vertex yang bergoyang. Estetika glitch yang sekarang justru dicari.',
+    gameboy:'Layar hijau monokrom dengan piksel kasar. Palet empat warna membuat semuanya harus sangat disederhanakan.',
+
+    cyberpunk:'Kota padat futuristik yang basah dan penuh neon. Selalu malam, selalu ada iklan menyala di belakang.',
+    steampunk:'Mesin uap, gir tembaga, dan busana era Victorian. Teknologi tinggi versi abad ke-19.',
+    samurai:'Prajurit dengan zirah tradisional Jepang. Membawa nuansa disiplin, kehormatan, dan ketegangan yang tertahan.',
+    ninja:'Siluet gelap dengan postur mengendap. Wajah biasanya tertutup, jadi ekspresi disampaikan lewat pose.',
+    viking:'Bulu, zirah kulit, dan nuansa Nordik yang dingin. Kasar, kuat, dan berangin.',
+    medieval:'Dunia fantasi abad pertengahan dengan kastil dan zirah plat. Fondasi klasik untuk ksatria dan naga.',
+    elf:'Telinga runcing, kain ringan yang mengalir, dan gerak anggun. Cantik dan sedikit angkuh.',
+    wizard:'Jubah, tongkat, dan aura sihir yang menyala. Bacaan visualnya langsung: ini orang yang menguasai kekuatan.',
+    mythology:'Dewa dan makhluk legenda dengan skala yang mengintimidasi. Cocok kalau subjekmu harus terasa lebih dari manusia.',
+    robot:'Robot humanoid dengan panel mekanis yang rapi. Bentuk manusia tapi jelas buatan pabrik.',
+    mecha:'Mecha raksasa dengan zirah plat dan sendi hidrolik. Skalanya besar, jadi pasangkan dengan framing yang luas.',
+    cyborg:'Daging manusia menyatu dengan mesin. Ketegangannya justru ada di batas antara keduanya.',
+    photoreal:'Sedekat mungkin dengan foto sungguhan. Pilihan terbaik kalau kamu ingin hasil yang meyakinkan, bukan artistik.',
+    cinematic:'Grading warna film dan komposisi seperti potongan adegan. Netral tapi langsung membuat gambar terasa mahal.'
+  },
+
+  gayaBenda: {
+    blueprint:'Garis putih di atas kertas biru seperti gambar teknik. Menekankan struktur dan ukuran, bukan keindahan.',
+    isometric:'Proyeksi 3D miring yang rapi tanpa perspektif. Semua sisi terlihat sama jelas, enak untuk diagram.',
+    architecture:'Render bangunan yang bersih dan presisi. Fokus ke bentuk, material, dan proporsi ruang.',
+    interior:'Tata letak ruangan dengan material yang terbaca jelas. Cocok untuk konsep desain atau moodboard.',
+    scifiroom:'Panel, strip lampu, dan permukaan steril khas pesawat luar angkasa. Dingin, bersih, dan tanpa jejak manusia.',
+    flat:'Bentuk datar dan warna solid tanpa bayangan rumit. Modern, ringan, dan mudah dibaca di layar kecil.',
+    minimal:'Sedikit elemen dengan ruang kosong yang luas. Kekuatannya justru pada apa yang tidak digambar.',
+    glass:'Kaca buram dengan highlight lembut dan lapisan transparan. Terasa modern dan ringan.',
+    brutalist:'Beton mentah dan bentuk berat yang jujur apa adanya. Kasar, besar, dan sengaja tidak ramah.',
+    bauhaus:'Geometri sederhana dengan warna primer. Rasional, tertata, dan tanpa hiasan.',
+    artdeco:'Garis elegan, simetri, dan kemewahan geometris. Membawa nuansa 1920-an yang glamor.',
+    memphis:'Pola 80-an yang cerah dan main-main. Berani bertabrakan warna, sengaja tidak serius.',
+
+    productshot:'Foto studio profesional dengan highlight bersih. Standar untuk katalog dan marketplace.',
+    macro:'Detail permukaan yang ekstrem dari jarak sangat dekat. Menunjukkan tekstur yang biasanya luput dari mata.',
+    fisheye:'Distorsi lebar yang melengkungkan garis lurus. Dramatis, tapi bentuk asli objek jadi kurang jujur.',
+    droneview:'Komposisi dari udara yang menunjukkan tata letak keseluruhan. Bagus untuk lokasi, bukan detail benda.',
+    hdr:'Rentang terang-gelap yang lebar dan tajam. Semua bagian terlihat, kadang sampai terasa berlebihan.',
+    polaroid:'Bingkai putih dengan warna sedikit pudar. Terasa personal dan seperti kenangan lama.',
+
+    marble:'Marmer putih yang halus mengkilap dengan urat alami. Memberi kesan klasik, mahal, dan abadi.',
+    bronze:'Patina gelap dengan highlight logam. Terasa seperti monumen yang sudah lama berdiri.',
+    ceramic:'Glaze halus dengan tepi buatan tangan. Hangat dan sedikit tidak sempurna.',
+    porcelain:'Putih halus yang tembus cahaya. Rapuh, bersih, dan sangat rapi.',
+    crystal:'Transparan dengan facet tajam yang membiaskan cahaya. Berkilau dari banyak sudut sekaligus.',
+    diamond:'Kilau tajam dengan refraksi pelangi. Paling mewah, tapi mudah jadi berlebihan.',
+    gold:'Pantulan emas yang kaya dan hangat. Sinyal kemewahan yang paling langsung terbaca.',
+    chrome:'Logam perak dengan pantulan seperti cermin. Memantulkan lingkungan, jadi latar ikut menentukan hasilnya.',
+    rusted:'Tekstur kasar dengan warna oksida. Menyiratkan waktu, cuaca, dan pengabaian.',
+    copper:'Tembaga teroksidasi dengan patina hijau. Perpaduan hangat dan tua yang khas.',
+    woodcarving:'Urat kayu dan bekas pahat yang terlihat. Terasa buatan tangan dan penuh kesabaran.',
+    icecarve:'Es transparan dengan retak halus dan nuansa dingin. Indah tapi jelas sementara.',
+    glassart:'Kaca tebal dengan pantulan dan caustics cahaya. Cocok untuk benda yang ingin terasa berharga.',
+    holographic:'Kilau pelangi yang bergeser mengikuti sudut. Futuristik dan sangat menarik perhatian.',
+    iridescent:'Warna yang berubah tergantung sudut pandang. Lebih halus dan organik dibanding holografik.',
+
+    origami:'Kertas terlipat dengan sudut geometris tajam. Bentuk disederhanakan jadi bidang-bidang lipatan.',
+    papercut:'Potongan kertas berlapis dengan bayangan antar lapisan. Memberi kedalaman tanpa perspektif.',
+    quilling:'Gulungan kertas berwarna yang disusun rapat. Rumit, dekoratif, dan sangat buatan tangan.',
+    embroidery:'Benang dan tusukan rapi di atas kain. Tekstur jahitannya jadi daya tarik utama.',
+    mosaic:'Pecahan warna kecil yang disusun rapat. Gambar terbentuk dari jarak jauh, bukan dari dekat.',
+    mandala:'Simetri radial yang rumit dan berulang. Menenangkan, tapi bukan untuk objek yang butuh bentuk realistis.',
+
+    movieposter:'Judul besar dan komposisi ikonik ala poster bioskop. Dirancang supaya terbaca dari jauh.',
+    magazine:'Tipografi editorial dengan satu foto utama. Terasa seperti sampul yang siap cetak.',
+    album:'Komposisi persegi yang kuat ala sampul musik. Harus tetap terbaca walau dikecilkan jadi thumbnail.',
+    sticker:'Outline tebal dengan bentuk yang siap dipotong. Sederhana dan berani, tanpa detail halus.',
+    emblem:'Perisai, pita, dan detail heraldik yang simetris. Cocok untuk lencana tim atau logo premium.',
+    logo:'Bentuk bersih yang mudah diingat dan bisa dikecilkan. Semakin sedikit elemen, semakin kuat.',
+    appicon:'Bentuk sederhana di dalam rounded square. Harus tetap jelas di ukuran sangat kecil.',
+    tradingcard:'Bingkai koleksi lengkap dengan panel statistik. Struktur kartunya ikut jadi bagian desain.',
+    mapillo:'Peta ilustrasi dengan kompas dan label tempat. Informatif sekaligus dekoratif.',
+
+    wireframe:'Hanya garis tepi objek tanpa tekstur sama sekali. Menunjukkan struktur, bukan penampilan akhir.',
+    hud:'Overlay data dan reticle ala antarmuka sci-fi. Menyiratkan bahwa objek sedang dianalisis.',
+    neonui:'Tombol dan panel yang menyala di atas latar gelap. Futuristik dengan sentuhan arcade.',
+    terminal:'Teks hijau di layar gelap ala terminal lama. Langsung membawa asosiasi peretasan.',
+    spaceship:'Pelat hull, antena, dan thruster. Skalanya besar, jadi butuh latar yang luas.',
+    timemachine:'Cincin berputar, panel kuno, dan cahaya portal. Perpaduan mesin tua dan energi aneh.',
+    steammachine:'Pipa, katup, dan manometer yang saling terhubung. Rumit, berat, dan terasa berdengung.'
+  },
+
+  framing: {
+    ecu:'Hanya satu detail kecil yang memenuhi frame, misalnya mata atau ujung jari. Sangat intens, tapi konteks sekitarnya hilang total.',
+    cu:'Wajah memenuhi sebagian besar frame sehingga ekspresi terbaca jelas. Pilihan standar untuk potret yang emosional.',
+    ms:'Setengah badan dengan sedikit latar yang terlihat. Seimbang antara ekspresi dan konteks tempat.',
+    full:'Seluruh tubuh dari kepala sampai kaki. Wajib kalau kostum, pose, atau siluet ikut jadi bagian desain.',
+    wide:'Subjek kecil di tengah pemandangan luas. Yang bercerita di sini justru lingkungannya, bukan wajahnya.',
+    establishing:'Memperkenalkan lokasi secara luas sebelum masuk ke detail. Biasanya jadi gambar pembuka sebuah cerita.',
+
+    eyelevel:'Kamera sejajar mata subjek. Netral dan jujur, tidak menambah kesan kuat maupun lemah.',
+    low:'Kamera dari bawah membuat subjek menjulang dan berkuasa. Trik klasik untuk pahlawan dan penjahat.',
+    high:'Kamera dari atas membuat subjek terlihat kecil dan rentan. Kebalikan langsung dari low angle.',
+    birds:'Melihat lurus ke bawah dari atas. Bagus untuk menunjukkan tata letak dan pola.',
+    worms:'Dari permukaan tanah menatap ke atas. Ekstrem, membuat apa pun terasa raksasa.',
+    dutch:'Frame sengaja dimiringkan sehingga penonton merasa ada yang tidak beres. Efektif untuk ketegangan dan kebingungan.',
+    aerial:'Komposisi dari udara pada ketinggian sedang. Menunjukkan hubungan subjek dengan lingkungannya.',
+
+    thirds:'Subjek diletakkan di garis sepertiga frame, bukan persis tengah. Terasa alami dan enak dilihat.',
+    centered:'Subjek tepat di tengah dan seimbang. Formal, tenang, dan sedikit menghadap penonton secara langsung.',
+    framewithin:'Subjek dikurung pintu, jendela, atau lengkungan. Menambah kedalaman sekaligus rasa terkurung.',
+    leading:'Garis-garis di dalam gambar mengarahkan mata ke subjek utama. Cara halus mengatur ke mana penonton melihat.',
+    negspace:'Subjek kecil dengan ruang kosong yang luas di sekitarnya. Kekosongannya sendiri yang menyampaikan perasaan.',
+    ots:'Melihat ke depan dari balik bahu seseorang. Menempatkan penonton di dalam percakapan.',
+    pov:'Seolah dilihat langsung lewat mata subjek. Paling imersif, tapi wajah subjek jadi tidak terlihat.',
+    two:'Dua subjek berbagi satu frame. Hubungan antar keduanya jadi inti gambarnya.',
+    profile:'Wajah atau siluet dilihat dari sisi samping. Menonjolkan bentuk, mengurangi keintiman.',
+    behind:'Subjek membelakangi kamera. Penonton ikut melihat apa yang subjek lihat.'
+  },
+
+  lighting: {
+    golden:'Cahaya oranye hangat yang datang rendah dari samping menjelang senja. Hampir selalu membuat gambar terasa indah.',
+    bluehour:'Cahaya biru dingin sesaat sebelum gelap total. Tenang, sendu, dan sedikit misterius.',
+    midday:'Matahari tegak lurus dengan bayangan pendek dan keras. Jujur tapi tidak ramah, sering terasa gersang.',
+    overcast:'Cahaya merata dari langit mendung tanpa bayangan tegas. Netral dan aman, cocok kalau bentuk objek yang mau ditonjolkan.',
+    moonlight:'Cahaya pucat keperakan di malam hari. Redup, dingin, dan menyisakan banyak bagian gelap.',
+    godrays:'Berkas cahaya yang terlihat menembus debu atau kabut. Menambah kedalaman sekaligus rasa sakral.',
+    aurora:'Langit hijau-ungu yang memantulkan warnanya ke subjek. Ajaib dan sangat khas kutub.',
+
+    soft:'Cahaya studio yang merata tanpa bayangan tajam. Aman, bersih, dan tidak menambah drama apa pun.',
+    ring:'Cahaya melingkar yang menghasilkan catchlight bundar di mata. Wajah rata dan terang, khas konten kecantikan.',
+    rembrandt:'Segitiga kecil cahaya di pipi yang teduh. Klasik potret: berdimensi tanpa jadi berlebihan.',
+    rim:'Garis cahaya tipis di tepi siluet subjek. Memisahkan subjek dari latar gelap dengan rapi.',
+    backlit:'Cahaya kuat dari belakang membuat subjek jadi siluet. Bentuk terbaca, tapi detail wajah hilang.',
+    dramatic:'Kontras tinggi antara bagian terang dan gelap. Langsung menaikkan ketegangan sebuah adegan.',
+    chiaroscuro:'Gelap pekat dengan satu sumber cahaya kuat. Versi paling ekstrem dari pencahayaan dramatis.',
+    spotlight:'Satu titik cahaya mengisolasi subjek dari kegelapan. Semua perhatian terpaksa jatuh ke sana.',
+
+    candle:'Cahaya lilin yang redup, hangat, dan berkedip. Intim kalau dari depan, mencekam kalau dari bawah.',
+    neon:'Pantulan pink dan biru dari papan reklame. Sinyal visual paling cepat untuk kota malam.',
+    campfire:'Oranye berkedip yang datang dari bawah. Hangat dan berkumpul, tapi arah bawahnya bikin wajah sedikit aneh.',
+    lightning:'Kilat sekejap yang membekukan gerakan dengan keras. Terang menyilaukan di tengah gelap total.',
+    fluorescent:'Cahaya kehijauan khas kantor atau ruang bawah tanah. Membuat semuanya terasa murah dan tidak nyaman.',
+    practical:'Lampu yang benar-benar terlihat di dalam adegan sebagai sumbernya. Terasa masuk akal dan tidak dibuat-buat.',
+    screen:'Cahaya biru dingin dari layar monitor di ruang gelap. Langsung menyiratkan malam dan kesendirian.',
+    biolum:'Cahaya organik yang memancar dari dalam objek hidup. Ajaib, dingin, dan terasa asing.'
+  },
+
+  mood: {
+    serene:'Tenang dan damai tanpa ketegangan sama sekali. Cocok kalau kamu ingin penonton bernapas lega.',
+    cozy:'Hangat dan aman seperti di rumah sendiri. Biasanya dipasangkan dengan cahaya keemasan.',
+    nostalgic:'Terasa seperti kenangan lama yang muncul lagi. Manis dan sedikit sedih di saat bersamaan.',
+    romantic:'Lembut dan intim dengan jarak yang dekat. Bekerja paling baik pada dua subjek.',
+    playful:'Ceria, ringan, dan warna-warni. Pas untuk anak-anak atau konten yang tidak serius.',
+    whimsical:'Ajaib ringan dengan sedikit kenakalan. Aneh tapi tetap menyenangkan, bukan menakutkan.',
+    dreamy:'Kabur dan lembut seperti sedang bermimpi. Batas antar objek sengaja dibuat tidak tegas.',
+
+    tense:'Terasa seperti ada yang mengintai walau belum terlihat. Ketegangan yang belum meledak.',
+    mysterious:'Banyak bayangan dan sudut gelap yang menyembunyikan sesuatu. Mengundang penonton menebak.',
+    horror:'Uncanny dan menakutkan secara terang-terangan. Lebih jauh dari sekadar tegang atau misterius.',
+    melancholy:'Sendu dan reflektif tanpa jadi putus asa. Cocok untuk potret yang diam dan dalam.',
+    lonely:'Subjek terisolasi di ruang yang jauh lebih besar darinya. Perpaduan bagus dengan negative space.',
+    apocalyptic:'Runtuh dan sunyi setelah bencana besar. Yang tersisa hanya jejak, bukan orangnya.',
+    aggressive:'Energi kasar dan konfrontatif yang mendorong ke depan. Bagus untuk aksi dan pertarungan.',
+
+    epic:'Skala besar dan dramatis yang mengecilkan manusia. Pasangkan dengan wide shot agar terasa.',
+    heroic:'Kemenangan dan keberanian yang jelas terbaca. Sering dipadukan dengan sudut kamera rendah.',
+    futuristic:'Dingin dan padat teknologi. Bersih dan efisien, bukan hangat.',
+    clinical:'Steril seperti laboratorium, tanpa emosi. Membuat subjek terasa seperti objek pengamatan.',
+    sacred:'Khidmat dan spiritual dengan rasa hormat. Cahaya biasanya datang dari atas.',
+    triumphant:'Puncak kemenangan yang menyala dan terbuka. Lebih meledak dibanding heroik yang tenang.'
+  },
+
+  detail: {
+    rusty:'Permukaan berkarat dan kasar. Menyiratkan waktu, cuaca, dan benda yang lama ditinggalkan.',
+    glossy:'Permukaan mengkilap yang halus dan memantul. Terasa baru, bersih, dan terawat.',
+    oldmetal:'Logam tua sebagai material dominan. Berat, dingin, dan sudah punya sejarah.',
+    wood:'Kayu dengan urat yang terlihat jelas. Hangat dan alami, lawan dari logam.',
+    glassmat:'Permukaan kaca atau transparan dengan caustics cahaya. Membuat cahaya jadi bagian dari objeknya.',
+    fabric:'Kain dengan anyaman dan lipatan yang jelas. Melembutkan siluet dan menunjukkan gerak.',
+    leather:'Kulit aus dengan retak halus dan kilau minyak. Terasa dipakai lama, bukan baru dibeli.',
+    wet:'Keringat atau hujan terlihat di permukaan. Menambah kilau dan rasa mendesak.',
+
+    mono:'Hanya hitam, putih, dan abu-abu. Menghapus warna supaya bentuk dan kontras yang bicara.',
+    warm:'Didominasi oranye dan merah. Terasa hangat, dekat, dan berenergi.',
+    cool:'Biru dan teal yang tenang. Terasa jauh, dingin, dan terkendali.',
+    complementary:'Dua warna berseberangan yang bertabrakan tajam, misalnya oranye dan teal. Kontras tinggi yang langsung menarik mata.',
+    muted:'Warna yang sengaja diredam seperti film lama. Menenangkan dan tidak berteriak.',
+    neonpal:'Warna menyala di atas latar gelap. Butuh latar gelap supaya efeknya bekerja.',
+
+    ultradetail:'Setiap tekstur terlihat tajam sampai ke pori. Bagus untuk close-up, berisiko ramai untuk wide shot.',
+    minimalclean:'Sedikit detail dan permukaan bersih. Kebalikan langsung dari ultra-detail.',
+    eightk:'Render resolusi tinggi dengan fokus tajam menyeluruh. Meningkatkan ketajaman umum tanpa mengubah gaya.',
+    dof:'Latar belakang blur lembut sementara subjek tetap tajam. Cara paling efektif mengarahkan perhatian.',
+    tiltshift:'Fokus menyempit jadi satu pita sehingga dunia terlihat seperti miniatur. Efeknya kuat, jadi jangan dipakai sembarangan.',
+    motionblur:'Elemen yang bergerak sedikit buram. Menyiratkan kecepatan tanpa perlu menambah objek.',
+    longexposure:'Jejak cahaya memanjang dan air jadi selembut sutra. Menunjukkan waktu yang berlalu dalam satu gambar.',
+    grain:'Butiran film analog yang terlihat. Menambah tekstur dan rasa nyata, mengurangi kesan terlalu bersih.',
+    chromatic:'Pinggiran warna tipis di tepi frame seperti lensa murah. Menambah kesan kamera sungguhan.',
+    flare:'Kilau lensa sinematik dari sumber cahaya terang. Dramatis, tapi mudah berlebihan kalau dipakai terus.'
+  }
+};
+
+/* Ilustrasi per kelompok opsi. Sengaja skematis: tugasnya menerangkan apa yang
+   dibedakan kelompok ini (jarak kamera, arah cahaya, jenis material), bukan
+   memamerkan contoh keluaran AI. Satu gambar dipakai bersama oleh semua opsi
+   dalam kelompok yang sama. */
+const GROUP_ART = {
+  'Animasi & kartun':
+    '<rect width="240" height="110" fill="#FFE9F2"/>' +
+    '<circle cx="120" cy="58" r="38" fill="#FFD0A8"/>' +
+    '<path d="M84 42q10-22 36-22t36 22q-14-10-36-10t-36 10z" fill="#4A2E22"/>' +
+    '<ellipse cx="106" cy="60" rx="10" ry="12" fill="#fff"/><ellipse cx="134" cy="60" rx="10" ry="12" fill="#fff"/>' +
+    '<circle cx="107" cy="62" r="6" fill="#2B3A67"/><circle cx="135" cy="62" r="6" fill="#2B3A67"/>' +
+    '<circle cx="104" cy="58" r="2.2" fill="#fff"/><circle cx="132" cy="58" r="2.2" fill="#fff"/>' +
+    '<path d="M112 80q8 7 16 0" stroke="#8A4A3A" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="88" cy="74" r="6" fill="#FF9EB5" opacity=".6"/><circle cx="152" cy="74" r="6" fill="#FF9EB5" opacity=".6"/>',
+
+  'Komik & gambar tangan':
+    '<rect width="240" height="110" fill="#F6F1E6"/>' +
+    '<rect x="12" y="12" width="100" height="86" fill="#FFFDF6" stroke="#141414" stroke-width="3"/>' +
+    '<rect x="128" y="12" width="100" height="86" fill="#FFFDF6" stroke="#141414" stroke-width="3"/>' +
+    '<g fill="#141414" opacity=".55">' +
+    '<circle cx="26" cy="76" r="2.4"/><circle cx="38" cy="76" r="2.4"/><circle cx="50" cy="76" r="2.4"/><circle cx="62" cy="76" r="2.4"/>' +
+    '<circle cx="32" cy="86" r="2"/><circle cx="44" cy="86" r="2"/><circle cx="56" cy="86" r="2"/><circle cx="68" cy="86" r="2"/></g>' +
+    '<path d="M26 56q22-30 42-6t34-16" stroke="#141414" stroke-width="4" fill="none" stroke-linecap="round"/>' +
+    '<path d="M142 30q26 6 40 30t-8 34" stroke="#141414" stroke-width="7" fill="none" stroke-linecap="round" opacity=".85"/>' +
+    '<path d="M150 76q18-8 34 2" stroke="#B4472E" stroke-width="5" fill="none" stroke-linecap="round" opacity=".8"/>',
+
+  'Era & suasana':
+    '<rect width="240" height="110" fill="#101018"/>' +
+    '<rect x="10" y="14" width="68" height="82" fill="#C9A66B"/>' +
+    '<rect x="86" y="14" width="68" height="82" fill="#D8D8D8"/>' +
+    '<rect x="162" y="14" width="68" height="82" fill="#2A1140"/>' +
+    '<circle cx="44" cy="48" r="15" fill="#7A5A32" opacity=".8"/>' +
+    '<circle cx="120" cy="48" r="15" fill="#2A2A2A"/>' +
+    '<circle cx="196" cy="48" r="15" fill="#FF3FD0" opacity=".9"/>' +
+    '<rect x="10" y="76" width="68" height="6" fill="#8A6E43"/>' +
+    '<rect x="86" y="76" width="68" height="6" fill="#404040"/>' +
+    '<rect x="162" y="76" width="68" height="6" fill="#3FE0FF"/>' +
+    '<g fill="#101018"><rect x="0" y="0" width="240" height="8"/><rect x="0" y="102" width="240" height="8"/></g>' +
+    '<g fill="#5A5A6A"><rect x="14" y="1" width="8" height="6"/><rect x="38" y="1" width="8" height="6"/><rect x="62" y="1" width="8" height="6"/><rect x="86" y="1" width="8" height="6"/><rect x="110" y="1" width="8" height="6"/><rect x="134" y="1" width="8" height="6"/><rect x="158" y="1" width="8" height="6"/><rect x="182" y="1" width="8" height="6"/><rect x="206" y="1" width="8" height="6"/></g>',
+
+  'Mainan & figur':
+    '<rect width="240" height="110" fill="#EFE6DA"/>' +
+    '<ellipse cx="120" cy="98" rx="80" ry="8" fill="#C9BBAA"/>' +
+    '<rect x="86" y="26" width="34" height="20" rx="3" fill="#F2C13D"/>' +
+    '<rect x="96" y="20" width="14" height="8" rx="3" fill="#F2C13D"/>' +
+    '<circle cx="95" cy="36" r="2" fill="#3A2A1E"/><circle cx="111" cy="36" r="2" fill="#3A2A1E"/>' +
+    '<rect x="88" y="48" width="30" height="28" rx="3" fill="#3F7FD8"/>' +
+    '<rect x="90" y="76" width="12" height="16" rx="2" fill="#2A4E86"/><rect x="104" y="76" width="12" height="16" rx="2" fill="#2A4E86"/>' +
+    '<rect x="78" y="50" width="10" height="22" rx="4" fill="#F2C13D"/><rect x="118" y="50" width="10" height="22" rx="4" fill="#F2C13D"/>' +
+    '<circle cx="180" cy="66" r="26" fill="#D2724E"/>' +
+    '<path d="M164 56q8 6 4 14M188 54q-6 8 2 16" stroke="#B15A38" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".8"/>',
+
+  'Pixel & game':
+    '<rect width="240" height="110" fill="#0E1420"/>' +
+    '<g stroke="#1C2740" stroke-width="1">' +
+    '<path d="M0 22h240M0 44h240M0 66h240M0 88h240M40 0v110M80 0v110M120 0v110M160 0v110M200 0v110"/></g>' +
+    '<g fill="#5AD6A0">' +
+    '<rect x="100" y="22" width="40" height="10"/><rect x="90" y="32" width="60" height="10"/>' +
+    '<rect x="90" y="42" width="20" height="10"/><rect x="130" y="42" width="20" height="10"/>' +
+    '<rect x="90" y="52" width="60" height="10"/><rect x="80" y="62" width="80" height="10"/>' +
+    '<rect x="80" y="72" width="20" height="10"/><rect x="140" y="72" width="20" height="10"/></g>' +
+    '<g fill="#0E1420"><rect x="110" y="42" width="10" height="10"/><rect x="120" y="42" width="10" height="10"/></g>' +
+    '<g fill="#F2C13D"><rect x="30" y="80" width="10" height="10"/><rect x="200" y="30" width="10" height="10"/></g>',
+
+  'Tema karakter':
+    '<rect width="240" height="110" fill="#0B0E1C"/>' +
+    '<circle cx="120" cy="55" r="42" fill="#1A2340" opacity=".55"/>' +
+    '<path d="M92 26h56q10 0 10 12v30q0 16-16 24l-22 12-22-12q-16-8-16-24V38q0-12 10-12z" fill="#39406B"/>' +
+    '<path d="M92 26h56q10 0 10 12v10H82V38q0-12 10-12z" fill="#4A5490"/>' +
+    '<rect x="90" y="52" width="60" height="13" rx="6" fill="#4FD8EA"/>' +
+    '<rect x="94" y="55" width="52" height="4" rx="2" fill="#BFF6FF" opacity=".8"/>' +
+    '<path d="M104 78h32l-6 12h-20z" fill="#2B3157"/>' +
+    '<path d="M74 34l-12-8M166 34l12-8" stroke="#4FD8EA" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>',
+
+  'Teknik & desain':
+    '<rect width="240" height="110" fill="#0E3A6B"/>' +
+    '<g stroke="#2E6BA8" stroke-width="1" opacity=".75">' +
+    '<path d="M0 18h240M0 36h240M0 54h240M0 72h240M0 90h240M20 0v110M50 0v110M80 0v110M110 0v110M140 0v110M170 0v110M200 0v110M230 0v110"/></g>' +
+    '<g stroke="#EAF3FF" stroke-width="2.2" fill="none">' +
+    '<path d="M120 24l44 24v30l-44 24-44-24V48z"/>' +
+    '<path d="M120 24v30M120 54l44-6M120 54l-44-6M120 54v48"/></g>' +
+    '<path d="M24 92h40M24 88v8M64 88v8" stroke="#9CC6F0" stroke-width="1.6"/>' +
+    '<circle cx="196" cy="30" r="10" fill="none" stroke="#9CC6F0" stroke-width="1.6"/>' +
+    '<path d="M186 30h20M196 20v20" stroke="#9CC6F0" stroke-width="1.2"/>',
+
+  'Foto & produk':
+    '<rect width="240" height="110" fill="#E7ECF3"/>' +
+    '<ellipse cx="86" cy="92" rx="44" ry="7" fill="#B6C2D2"/>' +
+    '<rect x="66" y="36" width="40" height="52" rx="6" fill="#8FA6C0"/>' +
+    '<rect x="78" y="24" width="16" height="14" rx="3" fill="#6F87A5"/>' +
+    '<rect x="70" y="42" width="5" height="38" rx="2.5" fill="#FFFFFF" opacity=".75"/>' +
+    '<rect x="74" y="56" width="24" height="18" rx="2" fill="#FDFEFF"/>' +
+    '<g transform="translate(180,52)">' +
+    '<circle r="30" fill="#2B3648"/><circle r="15" fill="#0E1420"/>' +
+    '<g fill="#3E4C63"><path d="M0-30 26-15 15-9 0-18z"/><path d="M26-15v30l-11-6V-9z"/><path d="M26 15 0 30 0 18 15 9z"/><path d="M0 30-26 15-15 9 0 18z"/><path d="M-26 15v-30l11 6v18z"/><path d="M-26-15 0-30 0-18-15-9z"/></g>' +
+    '<circle r="15" fill="none" stroke="#6FE0FF" stroke-width="1.6" opacity=".7"/></g>',
+
+  'Material & patung':
+    '<rect width="240" height="110" fill="#171A22"/>' +
+    '<defs>' +
+    '<radialGradient id="ga9a" cx="34%" cy="28%"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#A8AEB8"/></radialGradient>' +
+    '<radialGradient id="ga9b" cx="34%" cy="28%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#B07C18"/></radialGradient>' +
+    '<radialGradient id="ga9c" cx="34%" cy="28%"><stop offset="0" stop-color="#C98A5E"/><stop offset="1" stop-color="#5E3320"/></radialGradient>' +
+    '</defs>' +
+    '<ellipse cx="120" cy="96" rx="104" ry="8" fill="#0D0F15"/>' +
+    '<circle cx="56" cy="56" r="28" fill="url(#ga9a)"/>' +
+    '<circle cx="120" cy="56" r="28" fill="url(#ga9b)"/>' +
+    '<circle cx="184" cy="56" r="28" fill="url(#ga9c)"/>' +
+    '<path d="M44 40q10-8 20-4" stroke="#FFFFFF" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>' +
+    '<path d="M108 40q10-8 20-4" stroke="#FFF6D8" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/>' +
+    '<g fill="#3E2415" opacity=".55"><circle cx="176" cy="50" r="3"/><circle cx="192" cy="62" r="2.4"/><circle cx="184" cy="70" r="2"/></g>',
+
+  'Kertas & kerajinan':
+    '<rect width="240" height="110" fill="#F3ECE0"/>' +
+    '<path d="M40 82L78 26l38 56z" fill="#E8DCC6"/>' +
+    '<path d="M78 26v56l38 0z" fill="#D3C2A4"/>' +
+    '<path d="M78 26 40 82h38z" fill="#F7F1E5"/>' +
+    '<path d="M140 34h72v50h-72z" fill="#E0D4BE"/>' +
+    '<path d="M148 42h56v34h-56z" fill="#F7F1E5"/>' +
+    '<path d="M156 50h40v18h-40z" fill="#D3C2A4"/>' +
+    '<path d="M132 96q14-10 28 0t28 0 28 0" stroke="#B4472E" stroke-width="2.6" fill="none" stroke-dasharray="7 5" stroke-linecap="round"/>' +
+    '<path d="M30 96q14-10 28 0t28 0" stroke="#3F7FD8" stroke-width="2.6" fill="none" stroke-dasharray="7 5" stroke-linecap="round"/>',
+
+  'Branding & cetak':
+    '<rect width="240" height="110" fill="#12141F"/>' +
+    '<rect x="14" y="10" width="74" height="90" rx="3" fill="#1E2740"/>' +
+    '<circle cx="51" cy="42" r="18" fill="#F0862E" opacity=".55"/>' +
+    '<path d="M40 58q11-8 22 0l4 20H36z" fill="#0B0E1C"/>' +
+    '<rect x="22" y="84" width="58" height="7" rx="2" fill="#F5E9D8"/>' +
+    '<rect x="100" y="10" width="60" height="90" rx="3" fill="#EDE6DA"/>' +
+    '<rect x="108" y="18" width="44" height="6" rx="2" fill="#B4472E"/>' +
+    '<rect x="108" y="30" width="44" height="40" rx="2" fill="#8FA6C0"/>' +
+    '<g fill="#8C8579"><rect x="108" y="76" width="44" height="3.5" rx="1.75"/><rect x="108" y="84" width="30" height="3.5" rx="1.75"/></g>' +
+    '<rect x="172" y="26" width="56" height="58" rx="8" fill="#3B66FF"/>' +
+    '<path d="M188 66l12-24 12 24z" fill="#EAF0FF"/>' +
+    '<circle cx="200" cy="40" r="5" fill="#EAF0FF" opacity=".8"/>',
+
+  'Teknologi & objek scene':
+    '<rect width="240" height="110" fill="#050A12"/>' +
+    '<g stroke="#0F3A4A" stroke-width="1"><path d="M0 26h240M0 84h240M60 0v110M180 0v110"/></g>' +
+    '<g stroke="#4FD8EA" stroke-width="1.8" fill="none">' +
+    '<path d="M78 34l34-14 34 14v34l-34 14-34-14z"/>' +
+    '<path d="M78 34l34 14 34-14M112 48v34"/></g>' +
+    '<g stroke="#4FD8EA" stroke-width="1.6" fill="none" opacity=".9">' +
+    '<circle cx="190" cy="56" r="20"/><circle cx="190" cy="56" r="8"/>' +
+    '<path d="M190 30v10M190 72v10M164 56h10M206 56h10"/></g>' +
+    '<g fill="#4FD8EA" opacity=".75"><rect x="14" y="34" width="30" height="3"/><rect x="14" y="42" width="20" height="3"/><rect x="14" y="50" width="26" height="3"/><rect x="14" y="58" width="14" height="3"/></g>',
+
+  'Jarak kamera':
+    '<rect width="240" height="110" fill="#101828"/>' +
+    '<g stroke="#3A4870" stroke-width="1.6" fill="#182240">' +
+    '<rect x="10" y="18" width="66" height="74" rx="3"/>' +
+    '<rect x="88" y="18" width="66" height="74" rx="3"/>' +
+    '<rect x="166" y="18" width="64" height="74" rx="3"/></g>' +
+    '<g fill="#7C94FF">' +
+    '<circle cx="43" cy="52" r="26"/>' +
+    '<circle cx="121" cy="44" r="14"/><path d="M104 92q17-30 34 0z"/>' +
+    '<circle cx="198" cy="60" r="6"/><path d="M191 92q7-16 14 0z"/></g>' +
+    '<g fill="#A9B4D6" font-family="monospace" font-size="9">' +
+    '<text x="26" y="104">dekat</text><text x="102" y="104">sedang</text><text x="184" y="104">jauh</text></g>',
+
+  'Sudut kamera':
+    '<rect width="240" height="110" fill="#101828"/>' +
+    '<path d="M96 92h48l-6-42q-18-8-36 0z" fill="#7C94FF"/>' +
+    '<circle cx="120" cy="38" r="13" fill="#7C94FF"/>' +
+    '<g fill="#FFB84D">' +
+    '<path d="M118 8h-16v10h16l-4-5z"/><rect x="102" y="6" width="4" height="14" rx="1"/>' +
+    '<path d="M40 82l14-6-2 10z"/><rect x="26" y="74" width="14" height="10" rx="2"/>' +
+    '<path d="M200 30l-14 6 2-10z"/><rect x="200" y="26" width="14" height="10" rx="2"/></g>' +
+    '<g stroke="#FFB84D" stroke-width="1.4" stroke-dasharray="4 4" fill="none" opacity=".8">' +
+    '<path d="M110 20L118 32M44 80L104 62M198 34L138 54"/></g>' +
+    '<g fill="#A9B4D6" font-family="monospace" font-size="8">' +
+    '<text x="122" y="16">atas</text><text x="16" y="98">bawah</text><text x="192" y="20">sejajar</text></g>',
+
+  'Komposisi':
+    '<rect width="240" height="110" fill="#101828"/>' +
+    '<rect x="20" y="12" width="200" height="86" fill="#182240" stroke="#3A4870" stroke-width="1.6"/>' +
+    '<g stroke="#FFB84D" stroke-width="1.2" stroke-dasharray="5 5" opacity=".85">' +
+    '<path d="M86.7 12v86M153.3 12v86M20 40.7h200M20 69.3h200"/></g>' +
+    '<circle cx="86.7" cy="40.7" r="6" fill="#FFB84D"/>' +
+    '<circle cx="153.3" cy="55" r="15" fill="#7C94FF"/>' +
+    '<path d="M136 98q17-30 34 0z" fill="#7C94FF"/>' +
+    '<path d="M20 98L153 62" stroke="#4FD8EA" stroke-width="1.6" opacity=".7"/>' +
+    '<path d="M220 98L153 62" stroke="#4FD8EA" stroke-width="1.6" opacity=".7"/>',
+
+  'Waktu & alam':
+    '<defs><linearGradient id="ga16" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#1B2A5A"/><stop offset=".55" stop-color="#E88A4A"/><stop offset="1" stop-color="#FFD9A0"/></linearGradient></defs>' +
+    '<rect width="240" height="110" fill="url(#ga16)"/>' +
+    '<path d="M24 78a96 96 0 0 1 192 0" stroke="#FFFFFF" stroke-width="1.4" fill="none" stroke-dasharray="4 6" opacity=".55"/>' +
+    '<circle cx="40" cy="52" r="9" fill="#CFE0FF"/>' +
+    '<circle cx="120" cy="24" r="13" fill="#FFF6D0"/>' +
+    '<circle cx="200" cy="52" r="11" fill="#FFB05E"/>' +
+    '<path d="M0 82q40-14 78-4t76 2 86-10v40H0z" fill="#243B2E"/>' +
+    '<path d="M0 94q52-10 106 2t134-6v20H0z" fill="#16281F"/>',
+
+  'Studio & dramatis':
+    '<rect width="240" height="110" fill="#0B0D14"/>' +
+    '<defs><radialGradient id="ga17" cx="30%" cy="26%" r="72%">' +
+    '<stop offset="0" stop-color="#FFF3DA"/><stop offset=".55" stop-color="#8A7A62"/><stop offset="1" stop-color="#14161E"/></radialGradient></defs>' +
+    '<rect x="14" y="20" width="34" height="46" rx="3" fill="#2A3247"/>' +
+    '<rect x="18" y="24" width="26" height="38" rx="2" fill="#FFF3DA" opacity=".85"/>' +
+    '<g stroke="#FFF3DA" stroke-width="1.2" opacity=".4"><path d="M50 32L86 42M50 44L86 50M50 56L86 58"/></g>' +
+    '<circle cx="132" cy="52" r="34" fill="url(#ga17)"/>' +
+    '<ellipse cx="158" cy="94" rx="46" ry="7" fill="#000000" opacity=".75"/>' +
+    '<path d="M166 40q12 14 6 34" stroke="#FFD9A8" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".55"/>',
+
+  'Sumber khusus':
+    '<rect width="240" height="110" fill="#07080E"/>' +
+    '<defs>' +
+    '<radialGradient id="ga18a" cx="50%" cy="50%"><stop offset="0" stop-color="#FFB05E" stop-opacity=".8"/><stop offset="1" stop-color="#FFB05E" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="ga18b" cx="50%" cy="50%"><stop offset="0" stop-color="#FF3FD0" stop-opacity=".7"/><stop offset="1" stop-color="#FF3FD0" stop-opacity="0"/></radialGradient>' +
+    '<radialGradient id="ga18c" cx="50%" cy="50%"><stop offset="0" stop-color="#4FD8EA" stop-opacity=".7"/><stop offset="1" stop-color="#4FD8EA" stop-opacity="0"/></radialGradient>' +
+    '</defs>' +
+    '<circle cx="46" cy="58" r="38" fill="url(#ga18a)"/>' +
+    '<circle cx="120" cy="58" r="38" fill="url(#ga18b)"/>' +
+    '<circle cx="194" cy="58" r="38" fill="url(#ga18c)"/>' +
+    '<rect x="41" y="58" width="10" height="26" rx="2" fill="#D6C9B2"/>' +
+    '<path d="M46 44q7 8 0 14q-7-6 0-14z" fill="#FFD08A"/>' +
+    '<rect x="100" y="46" width="40" height="20" rx="4" fill="none" stroke="#FF6FE0" stroke-width="2.6"/>' +
+    '<rect x="108" y="66" width="24" height="18" fill="#2A1140"/>' +
+    '<rect x="176" y="44" width="36" height="26" rx="3" fill="#0E2A38" stroke="#4FD8EA" stroke-width="1.6"/>' +
+    '<rect x="188" y="70" width="12" height="12" fill="#0E2A38"/>' +
+    '<g fill="#4FD8EA" opacity=".8"><rect x="181" y="50" width="18" height="2.5"/><rect x="181" y="56" width="12" height="2.5"/></g>',
+
+  'Tenang & hangat':
+    '<defs><linearGradient id="ga19" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#FFE7C4"/><stop offset="1" stop-color="#F4B98E"/></linearGradient></defs>' +
+    '<rect width="240" height="110" fill="url(#ga19)"/>' +
+    '<circle cx="190" cy="30" r="16" fill="#FFF6DC"/>' +
+    '<circle cx="190" cy="30" r="26" fill="#FFF6DC" opacity=".3"/>' +
+    '<path d="M0 74q46-22 92-6t148-8v50H0z" fill="#EFAF8B"/>' +
+    '<path d="M0 88q60-16 120 2t120-8v28H0z" fill="#D98C6A"/>' +
+    '<g fill="#FFFFFF" opacity=".55"><circle cx="52" cy="34" r="4"/><circle cx="92" cy="24" r="3"/><circle cx="126" cy="40" r="2.6"/></g>',
+
+  'Gelap & tegang':
+    '<rect width="240" height="110" fill="#07080C"/>' +
+    '<path d="M108 0h20l-8 110h-6z" fill="#8FA6C0" opacity=".22"/>' +
+    '<path d="M112 0h10l-4 110h-3z" fill="#CFE0FF" opacity=".38"/>' +
+    '<path d="M40 110L96 22l10 88z" fill="#000000" opacity=".85"/>' +
+    '<path d="M200 110L142 30l-10 80z" fill="#000000" opacity=".85"/>' +
+    '<circle cx="120" cy="52" r="5" fill="#E8535A"/>' +
+    '<circle cx="120" cy="52" r="14" fill="#E8535A" opacity=".18"/>' +
+    '<g stroke="#2A2F3D" stroke-width="1.4" opacity=".8"><path d="M12 16l16 10M228 16l-16 10M12 94l16-10M228 94l-16-10"/></g>',
+
+  'Besar & spekulatif':
+    '<defs><linearGradient id="ga21" x1="0" y1="0" x2="0" y2="1">' +
+    '<stop offset="0" stop-color="#1A2350"/><stop offset="1" stop-color="#070A16"/></linearGradient></defs>' +
+    '<rect width="240" height="110" fill="url(#ga21)"/>' +
+    '<circle cx="120" cy="34" r="30" fill="#3A4A8A" opacity=".35"/>' +
+    '<path d="M86 96V22l34-14 34 14v74z" fill="#0B1030"/>' +
+    '<path d="M120 8v88" stroke="#7C94FF" stroke-width="1.6" opacity=".5"/>' +
+    '<path d="M96 40h48M92 58h56M96 76h48" stroke="#7C94FF" stroke-width="1.4" opacity=".35"/>' +
+    '<rect x="0" y="96" width="240" height="14" fill="#05070F"/>' +
+    '<circle cx="44" cy="90" r="4" fill="#CFE0FF"/>' +
+    '<path d="M40 96q4-8 8 0z" fill="#CFE0FF"/>' +
+    '<g fill="#FFFFFF" opacity=".5"><circle cx="26" cy="20" r="1.4"/><circle cx="200" cy="16" r="1.6"/><circle cx="216" cy="46" r="1.2"/><circle cx="52" cy="44" r="1.2"/></g>',
+
+  'Tekstur & material':
+    '<rect width="240" height="110" fill="#12141C"/>' +
+    '<defs>' +
+    '<linearGradient id="ga22a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset=".45" stop-color="#B8C2CF"/><stop offset="1" stop-color="#6E7A8C"/></linearGradient>' +
+    '<linearGradient id="ga22b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B5764A"/><stop offset="1" stop-color="#6E4326"/></linearGradient>' +
+    '</defs>' +
+    '<rect x="10" y="10" width="108" height="42" rx="4" fill="#8A4B2A"/>' +
+    '<g fill="#5E2F17" opacity=".7"><circle cx="30" cy="24" r="4"/><circle cx="60" cy="38" r="5"/><circle cx="90" cy="20" r="3.4"/><circle cx="104" cy="40" r="4"/><circle cx="44" cy="44" r="2.6"/></g>' +
+    '<rect x="124" y="10" width="106" height="42" rx="4" fill="url(#ga22a)"/>' +
+    '<path d="M134 48L172 10" stroke="#FFFFFF" stroke-width="7" opacity=".8"/>' +
+    '<rect x="10" y="58" width="108" height="42" rx="4" fill="url(#ga22b)"/>' +
+    '<g stroke="#4E2F19" stroke-width="1.6" opacity=".8" fill="none"><path d="M10 68q54-8 108 0M10 80q54 8 108 0M10 92q54-6 108 0"/></g>' +
+    '<rect x="124" y="58" width="106" height="42" rx="4" fill="#3F5B86"/>' +
+    '<g stroke="#5E7FB0" stroke-width="1.4" opacity=".9"><path d="M132 58v42M146 58v42M160 58v42M174 58v42M188 58v42M202 58v42M216 58v42M124 66h106M124 76h106M124 86h106M124 96h106"/></g>',
+
+  'Warna':
+    '<rect width="240" height="110" fill="#12141C"/>' +
+    '<g><rect x="10" y="12" width="52" height="38" rx="4" fill="#F2F4F8"/><rect x="10" y="12" width="26" height="38" rx="4" fill="#8C929C"/><rect x="10" y="12" width="12" height="38" fill="#1E2128"/></g>' +
+    '<g><rect x="70" y="12" width="52" height="38" rx="4" fill="#F2A03C"/><rect x="70" y="12" width="26" height="38" fill="#E2542E"/><rect x="70" y="12" width="12" height="38" fill="#8E2418"/></g>' +
+    '<g><rect x="130" y="12" width="52" height="38" rx="4" fill="#7FD8E8"/><rect x="130" y="12" width="26" height="38" fill="#3E86B8"/><rect x="130" y="12" width="12" height="38" fill="#1B3E63"/></g>' +
+    '<g><rect x="190" y="12" width="40" height="38" rx="4" fill="#E8E2D2"/><rect x="190" y="12" width="20" height="38" fill="#B8AE96"/></g>' +
+    '<rect x="10" y="60" width="220" height="18" rx="4" fill="#2A2F3D"/>' +
+    '<g><rect x="14" y="63" width="40" height="12" rx="2" fill="#FF3FD0"/><rect x="60" y="63" width="40" height="12" rx="2" fill="#4FD8EA"/><rect x="106" y="63" width="40" height="12" rx="2" fill="#5AE88A"/><rect x="152" y="63" width="40" height="12" rx="2" fill="#FFD84F"/><rect x="198" y="63" width="28" height="12" rx="2" fill="#B06FFF"/></g>' +
+    '<g fill="#A9B4D6" font-family="monospace" font-size="8"><text x="10" y="94">mono</text><text x="70" y="94">hangat</text><text x="130" y="94">dingin</text><text x="190" y="94">muted</text></g>',
+
+  'Ketajaman & lensa':
+    '<rect width="240" height="110" fill="#0C1018"/>' +
+    '<defs><filter id="ga24"><feGaussianBlur stdDeviation="5"/></filter></defs>' +
+    '<g filter="url(#ga24)" opacity=".85">' +
+    '<circle cx="182" cy="34" r="17" fill="#3B66FF"/><circle cx="212" cy="66" r="13" fill="#7C94FF"/><circle cx="160" cy="76" r="11" fill="#4FD8EA"/></g>' +
+    '<circle cx="72" cy="55" r="30" fill="none" stroke="#EAF0FF" stroke-width="2.6"/>' +
+    '<circle cx="72" cy="55" r="15" fill="none" stroke="#EAF0FF" stroke-width="2"/>' +
+    '<circle cx="72" cy="55" r="4" fill="#EAF0FF"/>' +
+    '<path d="M72 17v10M72 83v10M34 55h10M100 55h10" stroke="#EAF0FF" stroke-width="2" stroke-linecap="round"/>' +
+    '<path d="M108 96L214 14" stroke="#FFD9A8" stroke-width="2" opacity=".45"/>' +
+    '<circle cx="150" cy="58" r="7" fill="#FFD9A8" opacity=".35"/>' +
+    '<circle cx="176" cy="38" r="11" fill="#FFD9A8" opacity=".2"/>'
+};
+
 /* =========================================================================
    SUMBER TUNGGAL DAFTAR FIELD
    Menambah field cukup di sini — collect, reset, restore, dan simpan
@@ -1232,6 +1814,118 @@ function flashBtn(btn, okText, ok){
 }
 
 /* =========================================================================
+   KOTAK INFO OPSI DROPDOWN
+   ========================================================================= */
+const optPop = (function(){
+  const el = document.createElement('div');
+  el.className = 'opt-pop';
+  el.id = 'optPop';
+  el.setAttribute('role', 'tooltip');
+  el.hidden = true;
+  document.body.appendChild(el);
+  return el;
+})();
+
+/* Subjek contoh dipakai hanya kalau kolom Subjek masih kosong, supaya potongan
+   contoh prompt tetap terbaca sebagai kalimat utuh. */
+const SAMPLE_SUBJECT = {
+  gayaHidup:'prajurit tua', gayaBenda:'botol parfum kaca',
+  framing:'prajurit tua', lighting:'prajurit tua',
+  mood:'prajurit tua', detail:'botol parfum kaca'
+};
+
+/* Menyusun prompt seandainya opsi ini yang dipilih, memakai isian sekarang.
+   `state` ditukar sementara supaya buildPrompt tetap jadi satu-satunya tempat
+   aturan perakitan ditulis. */
+function previewPromptWith(catKey, id){
+  const saved = state;
+  const tmp = Object.assign({}, state);
+  if(catKey === 'gayaHidup') tmp.mode = 'hidup';
+  if(catKey === 'gayaBenda') tmp.mode = 'benda';
+  tmp[catKey] = id;
+  const adaSubjek = [tmp.objek, tmp.atribut, tmp.ekspresi, tmp.subjExtra]
+    .some(function(v){ return v.trim(); });
+  if(!adaSubjek) tmp.objek = SAMPLE_SUBJECT[catKey] || 'prajurit tua';
+  state = tmp;
+  const teks = plainPrompt();
+  state = saved;
+  return { teks: teks, contoh: !adaSubjek };
+}
+
+let optInfoAnchor = null;      // opsi yang sedang dijelaskan kotak info
+
+function showOptInfo(catKey, optEl){
+  const item = findItem(catKey, optEl.dataset.id);
+  if(!item){ hideOptInfo(); return; }
+  const desc = (OPTION_INFO[catKey] || {})[item[0]] || '';
+  const grup = optEl.dataset.group || '';
+  const art = GROUP_ART[grup] || '';
+  const frasa = state.lang === 'en' ? item[3] : item[2];
+  const ex = previewPromptWith(catKey, item[0]);
+  const teks = ex.teks.length > 240 ? ex.teks.slice(0, 240).trim() + '…' : ex.teks;
+
+  optPop.innerHTML =
+    (art ? '<svg class="op-art" viewBox="0 0 240 110" role="img" aria-label="Ilustrasi kelompok ' +
+           esc(grup) + '">' + art + '</svg>' : '') +
+    '<div class="op-grup">' + esc(grup) + '</div>' +
+    '<h5>' + esc(item[1]) + '</h5>' +
+    (desc ? '<p class="op-desc">' + esc(desc) + '</p>' : '') +
+    '<div class="op-sec"><span class="op-cap">Masuk ke prompt sebagai</span>' +
+      '<code class="op-frasa">' + esc(frasa) + '</code></div>' +
+    '<div class="op-sec"><span class="op-cap">Contoh prompt jadi' +
+      (ex.contoh ? ' <em>(subjek contoh)</em>' : '') + '</span>' +
+      '<code class="op-contoh">' + esc(teks) + '</code></div>';
+
+  optInfoAnchor = optEl;
+  optPop.hidden = false;
+  positionOptInfo(optEl);
+}
+
+function positionOptInfo(optEl){
+  const panel = optEl.closest('.cbx-panel');
+  if(!panel || optPop.hidden) return;
+  const vw = document.documentElement.clientWidth;
+  const vh = document.documentElement.clientHeight;
+  const PAD = 10, GAP = 10;
+
+  if(vw < 760){                                   // layar sempit: bilah di bawah
+    optPop.style.width = (vw - 2 * PAD) + 'px';
+    optPop.style.maxHeight = Math.round(vh * 0.42) + 'px';
+    optPop.style.left = PAD + 'px';
+    optPop.style.top = (vh - optPop.offsetHeight - PAD) + 'px';
+    return;
+  }
+
+  optPop.style.width = '';
+  optPop.style.maxHeight = (vh - 2 * PAD) + 'px';
+  const pr = panel.getBoundingClientRect();
+  const w = optPop.offsetWidth, h = optPop.offsetHeight;
+  let left;
+  if(pr.right + GAP + w <= vw - PAD) left = pr.right + GAP;          // kanan panel
+  else if(pr.left - GAP - w >= PAD) left = pr.left - GAP - w;        // kiri panel
+  else left = Math.max(PAD, Math.min(pr.left, vw - w - PAD));        // terpaksa menumpuk
+
+  const or = optEl.getBoundingClientRect();
+  optPop.style.left = Math.round(left) + 'px';
+  optPop.style.top = Math.round(Math.max(PAD, Math.min(or.top - 8, vh - h - PAD))) + 'px';
+}
+
+function hideOptInfo(){
+  optPop.hidden = true;
+  optInfoAnchor = null;
+}
+
+function repositionOptInfo(){
+  if(optPop.hidden || !optInfoAnchor || !optInfoAnchor.isConnected) return;
+  const panel = optInfoAnchor.closest('.cbx-panel');
+  if(!panel || panel.hidden){ hideOptInfo(); return; }
+  positionOptInfo(optInfoAnchor);
+}
+
+window.addEventListener('resize', repositionOptInfo);
+window.addEventListener('scroll', repositionOptInfo);
+
+/* =========================================================================
    COMBOBOX — select yang bisa dicari, dengan dukungan keyboard penuh
    ========================================================================= */
 function createCombobox(catKey){
@@ -1279,6 +1973,7 @@ function createCombobox(catKey){
       hits.forEach(function(it){
         const sel = state[catKey] === it[0];
         html += '<div class="cbx-opt" role="option" id="' + optId(it[0]) + '" data-id="' + it[0] + '" ' +
+                'data-group="' + esc(name) + '" ' +
                 'aria-selected="' + (sel ? 'true' : 'false') + '">' +
                   '<span>' + esc(it[1]) + '</span>' +
                   '<span class="hint">' + esc(it[2].split(',')[0]) + '</span>' +
@@ -1300,8 +1995,10 @@ function createCombobox(catKey){
       el.classList.add('active');
       search.setAttribute('aria-activedescendant', el.id);
       if(scroll !== false) el.scrollIntoView({ block:'nearest' });
+      showOptInfo(catKey, el);                 // setelah scroll, supaya posisinya pas
     }else{
       search.removeAttribute('aria-activedescendant');
+      hideOptInfo();
     }
   }
 
@@ -1318,6 +2015,7 @@ function createCombobox(catKey){
     panel.hidden = true;
     trigger.setAttribute('aria-expanded','false');
     search.removeAttribute('aria-activedescendant');
+    hideOptInfo();
     if(refocus) trigger.focus();
   }
   function choose(id){
@@ -1357,6 +2055,7 @@ function createCombobox(catKey){
     const opt = e.target.closest('.cbx-opt');
     if(opt){ e.preventDefault(); choose(opt.dataset.id); }
   });
+  list.addEventListener('scroll', repositionOptInfo);
   list.addEventListener('mousemove', function(e){
     const opt = e.target.closest('.cbx-opt');
     if(opt){ const i = visible.indexOf(opt); if(i >= 0 && i !== active) setActive(i, false); }
