@@ -201,7 +201,40 @@
   .seg-ctl button:not([aria-pressed="true"]):hover{ color: var(--ice); }
 
   /* ---------- Preset chips ---------- */
-  .chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; position:relative; }
+
+  /* ---------- Pratinjau preset (hover / fokus / klik) ---------- */
+  .chip.is-active{ border-color: var(--blue-soft); color: var(--ice); }
+  .preset-pop{
+    position:absolute; z-index:60; width:min(340px, 100%);
+    background:#0D1533; border:1px solid var(--blue-soft); border-radius:12px;
+    padding:12px; box-shadow:0 20px 48px rgba(0,0,0,.6);
+    opacity:0; transform:translateY(-6px); pointer-events:none;
+    transition:opacity .16s ease, transform .16s ease;
+  }
+  .preset-pop.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
+  .preset-pop{ overflow-y:auto; overscroll-behavior:contain; }
+  .preset-pop .pv{
+    display:block; width:100%; height:auto; border-radius:8px;
+    border:1px solid var(--line); background:#05070C;
+  }
+  .preset-pop .pv-note{
+    margin:6px 0 10px; font-size:10.5px; font-style:italic; color:var(--muted);
+  }
+  .preset-pop h4{
+    font-family:'Space Grotesk', sans-serif; font-size:13.5px; font-weight:600;
+    margin:0 0 6px; color:var(--ice);
+  }
+  .preset-pop p.pv-desc{ margin:0 0 11px; font-size:12px; line-height:1.65; color:var(--ice-dim); }
+  .preset-pop .pv-sets{
+    display:flex; flex-wrap:wrap; gap:5px 6px;
+    border-top:1px solid var(--line); padding-top:10px;
+  }
+  .preset-pop .pv-sets span{
+    background:var(--navy-soft); border:1px solid var(--line);
+    border-radius:5px; padding:3px 7px; font-size:10.5px; color:var(--ice-dim);
+  }
+  .preset-pop .pv-sets b{ color:var(--muted); font-weight:500; }
   .lang-note{
     margin:0; font-size:11.5px; line-height:1.5; color:var(--c3);
     background:var(--c3-dim); border:1px solid rgba(255,184,77,.28);
@@ -927,6 +960,130 @@ const PRESETS = [
   { name:'Horor',            mode:'hidup', gayaHidup:'photoreal',   framing:'dutch',    lighting:'candle',    mood:'horror',      detail:'grain',          ratio:'16:9' }
 ];
 
+/* Penjelasan + pratinjau tiap preset.
+   `art` adalah ilustrasi SVG buatan tangan yang meniru komposisi, arah cahaya,
+   dan palet hasil preset — bukan gambar keluaran AI. Sengaja inline supaya
+   halaman tetap satu berkas tanpa request ke luar. */
+const PRESET_INFO = {
+  'Potret sinematik': {
+    desc: 'Dipakai kalau kamu ingin potret orang yang terasa seperti potongan adegan film, bukan foto biasa. Kamera didekatkan ke wajah dan cahaya Rembrandt menerangi dari satu sisi saja, menyisakan segitiga kecil di pipi yang teduh, sementara sisi lain jatuh ke bayangan. Latar sengaja diburamkan lewat depth of field supaya mata langsung tertuju ke ekspresi, dengan nuansa melankolis dan rasio 4:5 yang pas untuk feed maupun cetak potret.',
+    art:
+      '<defs>' +
+      '<radialGradient id="pv1a" cx="36%" cy="32%" r="64%"><stop offset="0" stop-color="#FFBE86"/><stop offset="1" stop-color="#1B1209"/></radialGradient>' +
+      '<linearGradient id="pv1b" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0C1223"/><stop offset="1" stop-color="#04060D"/></linearGradient>' +
+      '</defs>' +
+      '<rect width="240" height="150" fill="url(#pv1b)"/>' +
+      '<circle cx="198" cy="32" r="14" fill="#2C4E70" opacity=".5"/>' +
+      '<circle cx="219" cy="72" r="9" fill="#2C4E70" opacity=".35"/>' +
+      '<circle cx="28" cy="110" r="12" fill="#3E2B1A" opacity=".5"/>' +
+      '<circle cx="46" cy="38" r="7" fill="#2C4E70" opacity=".28"/>' +
+      '<rect x="84" y="15" width="72" height="120" rx="6" fill="#120E14"/>' +
+      '<ellipse cx="103" cy="70" rx="30" ry="46" fill="url(#pv1a)" opacity=".55"/>' +
+      '<rect x="112" y="86" width="16" height="20" fill="#6B4630"/>' +
+      '<ellipse cx="120" cy="130" rx="37" ry="21" fill="#191310"/>' +
+      '<ellipse cx="120" cy="68" rx="19" ry="24" fill="#946641"/>' +
+      '<path d="M120 44a19 24 0 0 1 0 48z" fill="#2B1A11" opacity=".82"/>' +
+      '<path d="M104 55q-4 13 1 26" stroke="#FFD9A8" stroke-width="2.8" fill="none" stroke-linecap="round"/>' +
+      '<ellipse cx="128" cy="69" rx="4" ry="6" fill="#E8B47E" opacity=".7" transform="rotate(20 128 69)"/>' +
+      '<ellipse cx="113" cy="64" rx="2" ry="1.4" fill="#22150E"/>' +
+      '<ellipse cx="126" cy="64" rx="2" ry="1.4" fill="#22150E" opacity=".6"/>' +
+      '<path d="M115 79q5 4 10 1" stroke="#3A2317" stroke-width="1.6" fill="none" stroke-linecap="round" opacity=".7"/>'
+  },
+
+  'Foto produk': {
+    desc: 'Preset untuk menampilkan benda seapa adanya dan sebersih mungkin, seperti foto katalog toko. Objek diletakkan tepat di tengah frame lalu disinari soft studio light yang merata, sehingga hampir tidak ada bayangan keras yang mengganggu bentuk, sementara ultra-detail menjaga tekstur permukaan tetap tajam. Suasananya klinis dan netral supaya produk yang jadi bintangnya, dan rasio 1:1 membuatnya langsung aman dipakai di marketplace maupun grid Instagram.',
+    art:
+      '<defs>' +
+      '<linearGradient id="pv2a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDF2F9"/><stop offset="1" stop-color="#A9B7CB"/></linearGradient>' +
+      '<linearGradient id="pv2b" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5A7B99"/><stop offset=".42" stop-color="#E2EDF6"/><stop offset="1" stop-color="#6C88A5"/></linearGradient>' +
+      '</defs>' +
+      '<rect width="240" height="150" fill="url(#pv2a)"/>' +
+      '<ellipse cx="120" cy="127" rx="54" ry="9" fill="#8DA0B6" opacity=".55"/>' +
+      '<rect x="108" y="22" width="24" height="11" rx="3" fill="#C9A44C"/>' +
+      '<rect x="113" y="32" width="14" height="17" rx="3" fill="#7C92AB"/>' +
+      '<rect x="101" y="46" width="38" height="78" rx="8" fill="url(#pv2b)"/>' +
+      '<rect x="110" y="74" width="20" height="24" rx="2" fill="#FCFDFF" opacity=".88"/>' +
+      '<rect x="106" y="54" width="4" height="60" rx="2" fill="#FFFFFF" opacity=".75"/>' +
+      '<rect x="131" y="60" width="3" height="46" rx="1.5" fill="#FFFFFF" opacity=".4"/>'
+  },
+
+  'Karakter game': {
+    desc: 'Cocok untuk merancang karakter yang terasa hidup di dunia game. Seluruh tubuh dimasukkan ke frame dari kepala sampai kaki supaya kostum, siluet, dan pose terbaca utuh sebagai desain, bukan sekadar potret. Kota cyberpunk di belakang menyorotkan neon pink dan biru ke tepi tubuh, dan palet warna menyala di atas latar gelap menjaga karakter tetap menonjol; rasio 9:16 membuatnya langsung pas jadi splash screen atau story.',
+    art:
+      '<defs><linearGradient id="pv3a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1B0C34"/><stop offset="1" stop-color="#07030F"/></linearGradient></defs>' +
+      '<rect width="240" height="150" fill="url(#pv3a)"/>' +
+      '<g stroke="#43307A" stroke-width="1" opacity=".5"><path d="M0 120h240M0 134h240M36 106v44M76 106v44M164 106v44M204 106v44"/></g>' +
+      '<g fill="#1C1142" opacity=".92"><rect x="12" y="44" width="27" height="76"/><rect x="44" y="62" width="18" height="58"/><rect x="180" y="50" width="24" height="70"/><rect x="208" y="70" width="17" height="50"/></g>' +
+      '<g fill="#4FD8EA" opacity=".85"><rect x="18" y="52" width="4" height="4"/><rect x="29" y="66" width="4" height="4"/><rect x="18" y="80" width="4" height="4"/><rect x="188" y="58" width="4" height="4"/><rect x="196" y="80" width="4" height="4"/></g>' +
+      '<g fill="#FF4FD8" opacity=".7"><rect x="50" y="70" width="4" height="4"/><rect x="213" y="78" width="4" height="4"/></g>' +
+      '<ellipse cx="120" cy="122" rx="34" ry="7" fill="#4FD8EA" opacity=".18"/>' +
+      '<ellipse cx="120" cy="38" rx="9" ry="10.5" fill="#E9D6FF"/>' +
+      '<path d="M111 50h18l6 36h-30z" fill="#2B1C50"/>' +
+      '<rect x="112" y="86" width="7" height="33" rx="3" fill="#2B1C50"/>' +
+      '<rect x="121" y="86" width="7" height="33" rx="3" fill="#2B1C50"/>' +
+      '<path d="M110 52l-9 30M130 52l9 30" stroke="#2B1C50" stroke-width="6" stroke-linecap="round"/>' +
+      '<path d="M110 48q-5 19 0 38" stroke="#FF4FD8" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+      '<path d="M130 48q5 19 0 38" stroke="#4FD8EA" stroke-width="2.6" fill="none" stroke-linecap="round"/>'
+  },
+
+  'Poster film': {
+    desc: 'Menyusun gambar dengan logika poster bioskop, jadi enak dipakai untuk key visual atau sampul. Kamera ditaruh di sudut rendah supaya subjek terlihat menjulang dan berwibawa, dibantu pencahayaan kontras tinggi yang memisahkan terang dan gelap secara tegas. Palet komplementer dan suasana megah membuat komposisinya masih terbaca walau dilihat kecil dari jauh, dan rasio 2:3 mengikuti ukuran poster cetak standar.',
+    art:
+      '<defs><linearGradient id="pv4a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#16405A"/><stop offset=".58" stop-color="#0A1B26"/><stop offset="1" stop-color="#040A10"/></linearGradient></defs>' +
+      '<rect width="240" height="150" fill="#05070B"/>' +
+      '<rect x="66" y="7" width="108" height="136" rx="5" fill="url(#pv4a)"/>' +
+      '<circle cx="120" cy="54" r="31" fill="#F0862E" opacity=".33"/>' +
+      '<circle cx="120" cy="54" r="18" fill="#FFB25E" opacity=".22"/>' +
+      '<g fill="#02070A"><ellipse cx="120" cy="70" rx="10" ry="11.5"/><path d="M103 85q17-11 34 0l6 33h-46z"/><rect x="109" y="115" width="8" height="18"/><rect x="123" y="115" width="8" height="18"/></g>' +
+      '<path d="M107 64q-6 13 0 24" stroke="#FFC178" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+      '<rect x="76" y="117" width="88" height="9" rx="2" fill="#F5E9D8" opacity=".93"/>' +
+      '<rect x="88" y="130" width="64" height="4" rx="2" fill="#F5E9D8" opacity=".42"/>'
+  },
+
+  'Ilustrasi anak': {
+    desc: 'Nuansa hangat dan ramah untuk buku cerita, materi belajar, atau ilustrasi kampanye anak. Subjek diambil medium shot setengah badan di bawah cahaya golden hour yang keemasan, sehingga wajah dan latar sama-sama terasa lembut tanpa bayangan menakutkan. Suasana cozy dipadukan detail yang sengaja dibuat minimal dan bersih supaya gambar tidak ramai dan pesannya gampang ditangkap, dengan rasio 3:2 yang pas untuk halaman buku.',
+    art:
+      '<defs><linearGradient id="pv5a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE0AC"/><stop offset="1" stop-color="#FFB07C"/></linearGradient></defs>' +
+      '<rect width="240" height="150" fill="url(#pv5a)"/>' +
+      '<circle cx="184" cy="40" r="19" fill="#FFF4CB"/>' +
+      '<circle cx="184" cy="40" r="28" fill="#FFF4CB" opacity=".28"/>' +
+      '<path d="M0 106q40-26 84-6t72 2q34-16 84 4v44H0z" fill="#93D2A0"/>' +
+      '<path d="M0 124q56-18 108 2t132-6v30H0z" fill="#6FB980"/>' +
+      '<circle cx="150" cy="66" r="4" fill="#FFFFFF" opacity=".7"/>' +
+      '<circle cx="58" cy="52" r="3" fill="#FFFFFF" opacity=".55"/>' +
+      '<circle cx="204" cy="88" r="3" fill="#FFFFFF" opacity=".5"/>' +
+      '<path d="M88 106h18l5 22H83z" fill="#E8654F"/>' +
+      '<circle cx="97" cy="92" r="11" fill="#FFE3C4"/>' +
+      '<path d="M87 87q10-11 20 0q-10-5-20 0z" fill="#8A5A3B"/>' +
+      '<circle cx="93" cy="93" r="1.6" fill="#3A2A1E"/><circle cx="101" cy="93" r="1.6" fill="#3A2A1E"/>' +
+      '<path d="M94 98q3 3 6 0" stroke="#3A2A1E" stroke-width="1.4" fill="none" stroke-linecap="round"/>' +
+      '<rect x="90" y="128" width="5" height="10" rx="2" fill="#4A6FA5"/>' +
+      '<rect x="99" y="128" width="5" height="10" rx="2" fill="#4A6FA5"/>'
+  },
+
+  'Horor': {
+    desc: 'Untuk adegan mencekam yang terasa nyata, bukan kartun seram. Gaya fotorealistik dipadukan dutch angle — frame sengaja dimiringkan supaya penonton merasa ada yang tidak beres tanpa bisa menunjuk apa. Satu-satunya sumber cahaya adalah lilin yang redup dan berkedip dari bawah, arah yang jarang muncul di kehidupan sehari-hari sehingga wajah langsung terasa asing, dan film grain menambah tekstur analog seperti rekaman lama; rasio 16:9 menjaganya tetap sinematik.',
+    art:
+      '<defs>' +
+      '<radialGradient id="pv6a" cx="50%" cy="74%" r="48%"><stop offset="0" stop-color="#FFA33C" stop-opacity=".85"/><stop offset="1" stop-color="#FFA33C" stop-opacity="0"/></radialGradient>' +
+      '<filter id="pv6g"><feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2"/><feColorMatrix type="saturate" values="0"/></filter>' +
+      '</defs>' +
+      '<rect width="240" height="150" fill="#06070A"/>' +
+      '<ellipse cx="120" cy="118" rx="66" ry="34" fill="url(#pv6a)"/>' +
+      '<g transform="rotate(-7 120 74)">' +
+      '<ellipse cx="120" cy="62" rx="30" ry="37" fill="#171310"/>' +
+      '<path d="M93 74q27 32 54 0q-9 32-27 34q-18-2-27-34z" fill="#8A5426" opacity=".5"/>' +
+      '<ellipse cx="109" cy="59" rx="5.5" ry="3.2" fill="#000000"/>' +
+      '<ellipse cx="131" cy="59" rx="5.5" ry="3.2" fill="#000000"/>' +
+      '<path d="M110 84q10 9 20 0" stroke="#000000" stroke-width="2.6" fill="none" stroke-linecap="round"/>' +
+      '</g>' +
+      '<rect x="115" y="119" width="10" height="26" rx="2" fill="#D6C9B2"/>' +
+      '<path d="M120 104q8 9 0 15q-8-6 0-15z" fill="#FFD08A"/>' +
+      '<path d="M120 109q3.5 4 0 8q-3.5-4 0-8z" fill="#FFF6DC"/>' +
+      '<rect width="240" height="150" filter="url(#pv6g)" opacity=".16"/>'
+  }
+};
+
 /* =========================================================================
    SUMBER TUNGGAL DAFTAR FIELD
    Menambah field cukup di sini — collect, reset, restore, dan simpan
@@ -1479,6 +1636,119 @@ $('presetChips').addEventListener('click', function(e){
   onStateChange();
   toast('Preset “' + p.name + '” diterapkan. Tinggal isi subjeknya.');
 });
+
+
+/* Pratinjau preset: tampil saat kursor di atas chip, saat chip difokus lewat
+   keyboard, dan saat chip diklik. Popover diposisikan di bawah SELURUH baris
+   chip supaya tidak pernah menutupi chip lain yang mau diklik berikutnya. */
+(function(){
+  const chips = $('presetChips');
+  const pop = document.createElement('div');
+  pop.className = 'preset-pop';
+  pop.id = 'presetPop';
+  pop.setAttribute('role', 'tooltip');
+  chips.appendChild(pop);
+
+  let hideTimer = null, current = -1;
+
+  function build(i){
+    const p = PRESETS[i], info = PRESET_INFO[p.name] || {};
+    const gayaKey = p.mode === 'hidup' ? 'gayaHidup' : 'gayaBenda';
+    const sets = [
+      ['Gaya', labelOf(gayaKey, p[gayaKey])],
+      ['Framing', labelOf('framing', p.framing)],
+      ['Cahaya', labelOf('lighting', p.lighting)],
+      ['Mood', labelOf('mood', p.mood)],
+      ['Detail', labelOf('detail', p.detail)],
+      ['Rasio', p.ratio]
+    ].filter(function(r){ return r[1]; });
+
+    pop.innerHTML =
+      (info.art
+        ? '<svg class="pv" viewBox="0 0 240 150" role="img" aria-label="Ilustrasi gaya preset ' + esc(p.name) + '">' + info.art + '</svg>' +
+          '<p class="pv-note">Ilustrasi gaya, bukan gambar hasil AI.</p>'
+        : '') +
+      '<h4>' + esc(p.name) + '</h4>' +
+      '<p class="pv-desc">' + esc(info.desc || '') + '</p>' +
+      '<div class="pv-sets">' +
+        sets.map(function(r){ return '<span><b>' + esc(r[0]) + '</b> ' + esc(r[1]) + '</span>'; }).join('') +
+      '</div>';
+  }
+
+  function show(i, chip){
+    clearTimeout(hideTimer);
+    if(current !== i){ build(i); current = i; }
+    pop.style.visibility = 'hidden';
+    pop.classList.add('show');
+    const maxLeft = Math.max(0, chips.clientWidth - pop.offsetWidth);
+    pop.style.left = Math.min(chip.offsetLeft, maxLeft) + 'px';
+
+    // Muat popover di dalam viewport: taruh di bawah baris chip kalau muat,
+    // kalau tidak balik ke atas, lalu batasi tingginya pada sisa ruang.
+    const box = chips.getBoundingClientRect();
+    const vh = document.documentElement.clientHeight;
+    const GAP = 10, PAD = 12;
+    const roomBelow = vh - box.bottom - GAP - PAD;
+    const roomAbove = box.top - GAP - PAD;
+    pop.style.maxHeight = '';
+    const needed = pop.offsetHeight;
+    if(needed <= roomBelow || roomBelow >= roomAbove){
+      pop.style.top = (chips.clientHeight + GAP) + 'px';
+      pop.style.maxHeight = Math.max(160, roomBelow) + 'px';
+    }else{
+      pop.style.maxHeight = Math.max(160, roomAbove) + 'px';
+      pop.style.top = -(Math.min(needed, roomAbove) + GAP) + 'px';
+    }
+    pop.style.visibility = '';
+    Array.prototype.forEach.call(chips.querySelectorAll('.chip'), function(c){
+      c.classList.remove('is-active');
+      c.removeAttribute('aria-describedby');
+    });
+    chip.classList.add('is-active');
+    chip.setAttribute('aria-describedby', 'presetPop');
+  }
+
+  function hide(){
+    pop.classList.remove('show');
+    current = -1;
+    Array.prototype.forEach.call(chips.querySelectorAll('.chip'), function(c){
+      c.classList.remove('is-active');
+      c.removeAttribute('aria-describedby');
+    });
+  }
+  function hideSoon(){ clearTimeout(hideTimer); hideTimer = setTimeout(hide, 200); }
+
+  function chipFrom(target){
+    return target && target.closest ? target.closest('.chip[data-preset]') : null;
+  }
+
+  chips.addEventListener('mouseover', function(e){
+    const chip = chipFrom(e.target);
+    if(chip) show(Number(chip.dataset.preset), chip);
+  });
+  chips.addEventListener('mouseleave', hideSoon);
+  pop.addEventListener('mouseenter', function(){ clearTimeout(hideTimer); });
+  pop.addEventListener('mouseleave', hideSoon);
+
+  chips.addEventListener('focusin', function(e){
+    const chip = chipFrom(e.target);
+    if(chip) show(Number(chip.dataset.preset), chip);
+  });
+  chips.addEventListener('focusout', function(e){
+    if(!chips.contains(e.relatedTarget)) hideSoon();
+  });
+
+  // klik tetap menerapkan preset (listener terpisah di atas); di sini popover
+  // dibiarkan terbuka supaya penjelasannya bisa dibaca setelah diterapkan.
+  chips.addEventListener('click', function(e){
+    const chip = chipFrom(e.target);
+    if(chip) show(Number(chip.dataset.preset), chip);
+  });
+
+  document.addEventListener('keydown', function(e){ if(e.key === 'Escape') hide(); });
+  document.addEventListener('mousedown', function(e){ if(!chips.contains(e.target)) hide(); });
+  window.addEventListener('resize', hide);
+})();
 
 /* Bottom sheet di layar kecil */
 $('sheetHandle').addEventListener('click', function(){
